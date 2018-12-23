@@ -8,6 +8,9 @@ import javassist.LoaderClassPath;
 import javassist.bytecode.ClassFile;
 
 import javax.sql.DataSource;
+import javax.sql.XAConnection;
+import javax.sql.XADataSource;
+import javax.transaction.xa.XAResource;
 import java.io.IOException;
 import java.sql.*;
 import java.util.HashMap;
@@ -20,7 +23,7 @@ public final class JavassistProxyFactory {
     private final JavassistProxyClassGenerator proxyGenerator;
 
     private JavassistProxyFactory() {
-         this.proxyGenerator = new JavassistProxyClassGenerator(classPool);
+        this.proxyGenerator = new JavassistProxyClassGenerator(classPool);
     }
 
 
@@ -63,12 +66,26 @@ public final class JavassistProxyFactory {
         childs1.put("getConnection", connectionCt);
         final CtClass dataSourceCt = f.proxyGenerator.generate(DataSource.class, DataSourceProxy.class, null, childs1);
 
+        final CtClass xaResourceCt = f.proxyGenerator.generate(XAResource.class, XAResourceProxy.class, XAConnection.class, new HashMap<>());
+
+        final Map<String, CtClass> childsa = new HashMap<>();
+        childsa.put("getConnection", connectionCt);
+        childsa.put("getXAResource", xaResourceCt);
+        final CtClass xaconnectionCt = f.proxyGenerator.generate(XAConnection.class, XAConnectionProxy.class, XADataSource.class, childsa);
+
+        final Map<String, CtClass> childsb = new HashMap<>();
+        childsb.put("getXAConnection", xaconnectionCt);
+        final CtClass xadataSourceCt = f.proxyGenerator.generate(XADataSource.class, XADataSourceProxy.class, null, childsb);
+
         writeFile(dataSourceCt);
         writeFile(connectionCt);
         writeFile(pStatementCt);
         writeFile(cStatementCt);
         writeFile(statementCt);
         writeFile(resultSetCt);
+        writeFile(xaconnectionCt);
+        writeFile(xadataSourceCt);
+        writeFile(xaResourceCt);
     }
 
 

@@ -32,7 +32,6 @@ public class JavassistProxyClassGenerator {
         this.wrapMethodBody = (w, d) -> "{ try { return " + w + "(delegate." + d + "($$)); } catch (SQLException e) { throw checkException(e); } }";
     }
 
-
     public <T> CtClass generate(final Class<T> primaryIfaceClass, final Class<?> superClass, final Class<?> parentIfaceClass, final Map<String, CtClass> childs) throws Exception {
         final String newClassName = classNameFun.apply(superClass.getName());
         System.out.println("Generating " + newClassName);
@@ -61,7 +60,6 @@ public class JavassistProxyClassGenerator {
         return targetCt;
     }
 
-
     private void addWrapperMethod(Map<String, CtClass> childs, CtClass targetCt) throws NotFoundException, CannotCompileException {
         final Set<String> methodSet = new HashSet<>();
         for (CtClass child : childs.values()) {
@@ -83,34 +81,30 @@ public class JavassistProxyClassGenerator {
         }
     }
 
-
     private <T> void addMethods(final Class<T> primaryInterface, final CtClass superCt, final CtClass targetCt, final Map<String, CtClass> childs) throws NotFoundException, CannotCompileException {
         final Set<String> methodSet = new HashSet<>();
         excludeFinalMethods(superCt, methodSet);
-        for (Class<?> intf : getAllInterfaces(primaryInterface)) {
-            CtClass intfClass = classPool.getCtClass(intf.getName());
-            for (CtMethod intfMethod : intfClass.getDeclaredMethods()) {
-                final String signature = getSignature(intfMethod);
-                if (methodSet.add(signature)) {
-                    CtMethod newMethod = new CtMethod(intfMethod.getReturnType(), intfMethod.getName(), intfMethod.getParameterTypes(), targetCt);
-                    newMethod.setExceptionTypes(intfMethod.getExceptionTypes());
-                    CtClass child = childs.get(intfMethod.getName());
-                    if (child == null) {
-                        newMethod.setBody(delegateMethodBody.apply(intfMethod.getName()));
-                    } else {
-                        final CtClass ifaceParentCt = child.getInterfaces()[0];
-                        final String wrapMethodName = "wrap" + ifaceParentCt.getSimpleName();
-                        newMethod.setBody(this.wrapMethodBody.apply(wrapMethodName, intfMethod.getName()));
-                    }
-                    targetCt.addMethod(newMethod);
+        CtClass intfClass = classPool.getCtClass(primaryInterface.getName());
+        for (CtMethod intfMethod : intfClass.getMethods()) {
+            final String signature = getSignature(intfMethod);
+            if (methodSet.add(signature)) {
+                CtMethod newMethod = new CtMethod(intfMethod.getReturnType(), intfMethod.getName(), intfMethod.getParameterTypes(), targetCt);
+                newMethod.setExceptionTypes(intfMethod.getExceptionTypes());
+                CtClass child = childs.get(intfMethod.getName());
+                if (child == null) {
+                    newMethod.setBody(delegateMethodBody.apply(intfMethod.getName()));
+                } else {
+                    final CtClass ifaceParentCt = child.getInterfaces()[0];
+                    final String wrapMethodName = "wrap" + ifaceParentCt.getSimpleName();
+                    newMethod.setBody(this.wrapMethodBody.apply(wrapMethodName, intfMethod.getName()));
                 }
+                targetCt.addMethod(newMethod);
             }
         }
     }
 
-
     private void excludeFinalMethods(final CtClass superCt, final Set<String> methodSet) {
-        for (CtMethod superMethod : superCt.getDeclaredMethods()) {
+        for (CtMethod superMethod : superCt.getMethods()) {
             final String signature = getSignature(superMethod);
             if ((superMethod.getModifiers() & Modifier.FINAL) == Modifier.FINAL) {
                 methodSet.add(signature);
@@ -118,11 +112,9 @@ public class JavassistProxyClassGenerator {
         }
     }
 
-
     private String getSignature(CtMethod intfMethod) {
         return intfMethod.getName() + intfMethod.getSignature();
     }
-
 
     private void addConstructor(final CtClass parentIfCt, final CtClass primaryIfCt, final CtClass targetCt, final CtField field) throws CannotCompileException {
         CtClass[] parameter;
@@ -143,7 +135,6 @@ public class JavassistProxyClassGenerator {
         targetCt.addConstructor(constructor);
     }
 
-
     private CtField addField(CtClass ifaceCt, CtClass targetCt) throws CannotCompileException {
         CtField field = new CtField(ifaceCt, "delegate", targetCt);
         field.setModifiers(Modifier.FINAL | Modifier.PRIVATE);
@@ -151,32 +142,11 @@ public class JavassistProxyClassGenerator {
         return field;
     }
 
-
     private CtField addParentField(CtClass ifaceCt, CtClass targetCt) throws CannotCompileException {
         CtField field = new CtField(ifaceCt, "parent", targetCt);
         field.setModifiers(Modifier.FINAL | Modifier.PRIVATE);
         targetCt.addField(field);
         return field;
-    }
-
-
-    private static Set<Class<?>> getAllInterfaces(Class<?> clazz) {
-        Set<Class<?>> interfaces = new LinkedHashSet<>();
-        for (Class<?> intf : clazz.getInterfaces()) {
-            if (intf.getInterfaces().length > 0) {
-                interfaces.addAll(getAllInterfaces(intf));
-            }
-            interfaces.add(intf);
-        }
-        if (clazz.getSuperclass() != null) {
-            interfaces.addAll(getAllInterfaces(clazz.getSuperclass()));
-        }
-
-        if (clazz.isInterface()) {
-            interfaces.add(clazz);
-        }
-
-        return interfaces;
     }
 
 }

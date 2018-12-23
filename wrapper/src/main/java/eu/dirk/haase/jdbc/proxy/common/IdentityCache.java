@@ -9,14 +9,13 @@ public final class IdentityCache {
 
     private final IdentityHashMap identityHashMap;
 
-    public static IdentityCache getSingleton() {
-        return SINGLETON;
-    }
-
     private IdentityCache() {
         this.identityHashMap = new IdentityHashMap();
     }
 
+    public static IdentityCache getSingleton() {
+        return SINGLETON;
+    }
 
     public final <T> T get(T delegate, Supplier<T> make) {
         return (T) identityHashMap.computeIfAbsent(delegate, (k) -> make.get());
