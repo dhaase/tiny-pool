@@ -3,7 +3,10 @@ package eu.dirk.haase.jdbc.proxy.common;
 import java.sql.SQLException;
 import java.sql.Wrapper;
 
-public class Unwrapper {
+public final class Unwrapper {
+
+    private Unwrapper() {
+    }
 
     public static <T> T unwrap(Class<T> iface, final Object wrapper, final Object delegate) throws SQLException {
         if (iface.isInstance(wrapper)) {

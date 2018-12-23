@@ -7,10 +7,10 @@ public final class IdentityCache {
 
     private final static IdentityCache SINGLETON = new IdentityCache();
 
-    private final IdentityHashMap identityHashMap;
+    private final IdentityHashMap<Object,Object> identityHashMap;
 
     private IdentityCache() {
-        this.identityHashMap = new IdentityHashMap();
+        this.identityHashMap = new IdentityHashMap<>();
     }
 
     public static IdentityCache getSingleton() {
@@ -20,5 +20,6 @@ public final class IdentityCache {
     public final <T> T get(T delegate, Supplier<T> make) {
         return (T) identityHashMap.computeIfAbsent(delegate, (k) -> make.get());
     }
+
 
 }

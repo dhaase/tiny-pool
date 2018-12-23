@@ -141,11 +141,5 @@ public class JavassistProxyClassGenerator {
         return field;
     }
 
-    private CtField addParentField(CtClass ifaceCt, CtClass targetCt) throws CannotCompileException {
-        CtField field = new CtField(ifaceCt, "parent", targetCt);
-        field.setModifiers(Modifier.FINAL | Modifier.PRIVATE);
-        targetCt.addField(field);
-        return field;
-    }
 
 }
