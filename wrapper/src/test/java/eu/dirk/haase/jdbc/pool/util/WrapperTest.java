@@ -35,7 +35,7 @@ public class WrapperTest {
     @Test
     public void test_wrapper_datasource_singleton() throws Exception {
         DummyDataSource dummyDataSource = new DummyDataSource(true);
-        final Constructor<?> constructor = Class.forName("eu.dirk.haase.jdbc.pool.util.WDataSourceProxy").getDeclaredConstructors()[0];
+        final Constructor<?> constructor = Class.forName("eu.dirk.haase.jdbc.proxy.base.WDataSourceProxy").getDeclaredConstructors()[0];
         DataSource dataSource = (DataSource) constructor.newInstance(dummyDataSource.newDataSource());
         Connection connection1 = dataSource.getConnection();
         Connection connection2 = dataSource.getConnection();
@@ -45,7 +45,7 @@ public class WrapperTest {
     @Test
     public void test_wrapper_datasource() throws Exception {
         DummyDataSource dummyDataSource = new DummyDataSource(false);
-        final Constructor<?> constructor = Class.forName("eu.dirk.haase.jdbc.pool.util.WDataSourceProxy").getDeclaredConstructors()[0];
+        final Constructor<?> constructor = Class.forName("eu.dirk.haase.jdbc.proxy.base.WDataSourceProxy").getDeclaredConstructors()[0];
         DataSource dataSource = (DataSource) constructor.newInstance(dummyDataSource.newDataSource());
         Connection connection1 = dataSource.getConnection();
         Connection connection2 = dataSource.getConnection();

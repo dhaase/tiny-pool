@@ -1,9 +1,10 @@
-package eu.dirk.haase.jdbc.pool.util;
+package eu.dirk.haase.jdbc.proxy.base;
+
+import eu.dirk.haase.jdbc.proxy.common.IdentityCache;
+import eu.dirk.haase.jdbc.proxy.common.Unwrapper;
 
 import javax.sql.DataSource;
-import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
 public abstract class DataSourceProxy {

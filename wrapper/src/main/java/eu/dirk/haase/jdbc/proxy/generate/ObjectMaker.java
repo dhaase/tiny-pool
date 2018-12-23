@@ -1,4 +1,4 @@
-package eu.dirk.haase.jdbc.pool.util;
+package eu.dirk.haase.jdbc.proxy.generate;
 
 import java.util.function.Supplier;
 

@@ -71,7 +71,7 @@
                     </execution>
                 </executions>
                 <configuration>
-                    <mainClass>eu.dirk.haase.jdbc.pool.util.JavassistProxyFactory</mainClass>
+                    <mainClass>eu.dirk.haase.jdbc.proxy.generate.JavassistProxyFactory</mainClass>
                 </configuration>
             </plugin>
         </plugins>

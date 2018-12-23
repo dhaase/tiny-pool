@@ -1,4 +1,7 @@
-package eu.dirk.haase.jdbc.pool.util;
+package eu.dirk.haase.jdbc.proxy.base;
+
+import eu.dirk.haase.jdbc.proxy.common.IdentityCache;
+import eu.dirk.haase.jdbc.proxy.common.Unwrapper;
 
 import java.sql.Connection;
 import java.sql.SQLException;

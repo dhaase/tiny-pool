@@ -1,4 +1,4 @@
-package eu.dirk.haase.jdbc.pool.util;
+package eu.dirk.haase.jdbc.proxy.generate;
 
 import javassist.*;
 
@@ -9,7 +9,7 @@ import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
-public class ProxyClassGenerator {
+public class JavassistProxyClassGenerator {
 
     private static final String prefix = "W";
     private static final Function<String, String> CLASS_NAME_FUN = (cn) -> cn.replaceAll("(.+)\\.(\\w+)", "$1." + prefix + "$2");
@@ -20,12 +20,12 @@ public class ProxyClassGenerator {
     private final BiFunction<String, String, String> wrapMethodBody;
 
 
-    public ProxyClassGenerator(final ClassPool classPool) {
+    public JavassistProxyClassGenerator(final ClassPool classPool) {
         this(classPool, CLASS_NAME_FUN);
     }
 
 
-    public ProxyClassGenerator(final ClassPool classPool, final Function<String, String> classNameFun) {
+    public JavassistProxyClassGenerator(final ClassPool classPool, final Function<String, String> classNameFun) {
         this.classPool = classPool;
         this.classNameFun = classNameFun;
         this.delegateMethodBody = (d) -> "{ try { return delegate." + d + "($$); } catch (SQLException e) { throw checkException(e); } }";

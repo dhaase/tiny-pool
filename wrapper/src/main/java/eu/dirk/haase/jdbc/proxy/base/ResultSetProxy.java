@@ -1,29 +1,30 @@
-package eu.dirk.haase.jdbc.pool.util;
+package eu.dirk.haase.jdbc.proxy.base;
 
-import javax.sql.DataSource;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
+import eu.dirk.haase.jdbc.proxy.common.IdentityCache;
+import eu.dirk.haase.jdbc.proxy.common.Unwrapper;
+
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
-public abstract class ConnectionProxy {
+public abstract class ResultSetProxy {
 
-    private final Connection delegate;
-    private final DataSource dataSource;
+    private final ResultSet delegate;
+    private final Statement statement;
 
-    protected ConnectionProxy(final DataSource dataSource, final Connection delegate) {
-        this.dataSource = dataSource;
+    protected ResultSetProxy(final Statement statement, final ResultSet delegate) {
+        this.statement = statement;
         this.delegate = delegate;
     }
 
-    public final DataSource getDataSource() {
-        return dataSource;
+
+    public final Statement getStatement() {
+        return statement;
     }
 
 
-    public final Connection getDelegate() {
+    public final ResultSet getDelegate() {
         return delegate;
     }
 
@@ -37,12 +38,14 @@ public abstract class ConnectionProxy {
         return IdentityCache.getSingleton().get(delegate, make);
     }
 
-    public final <T> T unwrap(Class<T> iface) throws SQLException {
+
+    public final  <T> T unwrap(Class<T> iface) throws SQLException {
         return Unwrapper.unwrap(iface, this, this.delegate);
     }
 
     public final boolean isWrapperFor(Class<?> iface) throws SQLException {
         return Unwrapper.isWrapperFor(iface, this, this.delegate);
     }
+
 
 }

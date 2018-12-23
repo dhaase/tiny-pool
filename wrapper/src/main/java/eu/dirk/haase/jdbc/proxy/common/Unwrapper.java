@@ -1,4 +1,4 @@
-package eu.dirk.haase.jdbc.pool.util;
+package eu.dirk.haase.jdbc.proxy.common;
 
 import java.sql.SQLException;
 import java.sql.Wrapper;

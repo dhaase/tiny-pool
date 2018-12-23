@@ -1,5 +1,6 @@
-package eu.dirk.haase.jdbc.pool.util;
+package eu.dirk.haase.jdbc.proxy.generate;
 
+import eu.dirk.haase.jdbc.proxy.base.*;
 import javassist.CannotCompileException;
 import javassist.ClassPool;
 import javassist.CtClass;
@@ -16,10 +17,10 @@ public final class JavassistProxyFactory {
 
     private final ClassPool classPool = new ClassPool();
 
-    private final ProxyClassGenerator proxyGenerator;
+    private final JavassistProxyClassGenerator proxyGenerator;
 
     private JavassistProxyFactory() {
-         this.proxyGenerator = new ProxyClassGenerator(classPool);
+         this.proxyGenerator = new JavassistProxyClassGenerator(classPool);
     }
 
 
@@ -29,7 +30,7 @@ public final class JavassistProxyFactory {
         f.classPool.importPackage("java.sql");
         f.classPool.importPackage("javax.sql");
         f.classPool.importPackage("java.util.function");
-        f.classPool.importPackage("eu.dirk.haase.jdbc.pool.util");
+        f.classPool.importPackage("eu.dirk.haase.jdbc.proxy.generate");
         f.classPool.appendClassPath(new LoaderClassPath(JavassistProxyFactory.class.getClassLoader()));
 
         final CtClass resultSetCt = f.proxyGenerator.generate(ResultSet.class, ResultSetProxy.class, Statement.class, new HashMap<>());

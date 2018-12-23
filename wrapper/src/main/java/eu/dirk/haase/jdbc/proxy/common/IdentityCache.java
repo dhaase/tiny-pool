@@ -1,4 +1,4 @@
-package eu.dirk.haase.jdbc.pool.util;
+package eu.dirk.haase.jdbc.proxy.common;
 
 import java.util.IdentityHashMap;
 import java.util.function.Supplier;
@@ -18,7 +18,7 @@ public final class IdentityCache {
     }
 
 
-    protected final <T> T get(T delegate, Supplier<T> make) {
+    public final <T> T get(T delegate, Supplier<T> make) {
         return (T) identityHashMap.computeIfAbsent(delegate, (k) -> make.get());
     }
 
