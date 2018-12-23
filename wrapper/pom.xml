@@ -4,12 +4,13 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <artifactId>tiny-pool</artifactId>
         <groupId>dirk-haase.eu</groupId>
+        <artifactId>tiny-pool</artifactId>
         <version>1.0.0-SNAPSHOT</version>
     </parent>
 
     <artifactId>wrapper</artifactId>
+
 
     <dependencyManagement>
         <dependencies>
@@ -42,14 +43,13 @@
                 <executions>
                     <execution>
                         <phase>compile</phase>
-                        <!-- phase>generate-test-sources</phase -->
                         <goals>
                             <goal>java</goal>
                         </goals>
                     </execution>
                 </executions>
                 <configuration>
-                    <mainClass>com.zaxxer.hikari.util.JavassistProxyFactory</mainClass>
+                    <mainClass>eu.dirk.haase.jdbc.pool.util.JavassistProxyFactory</mainClass>
                 </configuration>
             </plugin>
         </plugins>
