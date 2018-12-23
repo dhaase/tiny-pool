@@ -15,15 +15,11 @@ import java.util.Map;
 public final class JavassistProxyFactory {
 
     private final ClassPool classPool = new ClassPool();
-    private final String fieldName;
-    private final String methodName;
 
     private final ProxyClassGenerator proxyGenerator;
 
     private JavassistProxyFactory() {
-        this.fieldName = "delegate";
-        this.methodName = "method";
-        this.proxyGenerator = new ProxyClassGenerator(classPool, fieldName, methodName);
+         this.proxyGenerator = new ProxyClassGenerator(classPool);
     }
 
 
@@ -32,6 +28,8 @@ public final class JavassistProxyFactory {
 
         f.classPool.importPackage("java.sql");
         f.classPool.importPackage("javax.sql");
+        f.classPool.importPackage("java.util.function");
+        f.classPool.importPackage("eu.dirk.haase.jdbc.pool.util");
         f.classPool.appendClassPath(new LoaderClassPath(JavassistProxyFactory.class.getClassLoader()));
 
         final CtClass resultSetCt = f.proxyGenerator.generate(ResultSet.class, ResultSetProxy.class, Statement.class, new HashMap<>());

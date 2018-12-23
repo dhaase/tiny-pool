@@ -6,32 +6,30 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 public class ProxyClassGenerator {
 
-    private static final Function<String, String> CLASS_NAME_FUN = (cn) -> cn.replaceAll("(.+)\\.(\\w+)", "$1.Hikari$2");
+    private static final String prefix = "W";
+    private static final Function<String, String> CLASS_NAME_FUN = (cn) -> cn.replaceAll("(.+)\\.(\\w+)", "$1." + prefix + "$2");
 
     private final ClassPool classPool;
     private final Function<String, String> classNameFun;
-    private final String fieldName;
-    private final String methodName;
-    private final String delegateMethodBody;
-    private final Function<String, String> wrapMethodBody;
+    private final Function<String, String> delegateMethodBody;
+    private final BiFunction<String, String, String> wrapMethodBody;
 
 
-    public ProxyClassGenerator(final ClassPool classPool, final String fieldName, final String methodName) {
-        this(classPool, CLASS_NAME_FUN, fieldName, methodName);
+    public ProxyClassGenerator(final ClassPool classPool) {
+        this(classPool, CLASS_NAME_FUN);
     }
 
 
-    public ProxyClassGenerator(final ClassPool classPool, final Function<String, String> classNameFun, final String fieldName, final String methodName) {
+    public ProxyClassGenerator(final ClassPool classPool, final Function<String, String> classNameFun) {
         this.classPool = classPool;
         this.classNameFun = classNameFun;
-        this.fieldName = fieldName;
-        this.methodName = "method";
-        this.delegateMethodBody = "{ try { return " + fieldName + "." + methodName + "($$); } catch (SQLException e) { throw checkException(e); } }";
-        this.wrapMethodBody = (w)->"{ try { return " + w + "(" + fieldName + "." + methodName + "($$)); } catch (SQLException e) { throw checkException(e); } }";
+        this.delegateMethodBody = (d) -> "{ try { return delegate." + d + "($$); } catch (SQLException e) { throw checkException(e); } }";
+        this.wrapMethodBody = (w, d) -> "{ try { return " + w + "(delegate." + d + "($$)); } catch (SQLException e) { throw checkException(e); } }";
     }
 
 
@@ -55,24 +53,34 @@ public class ProxyClassGenerator {
         addConstructor(parentIfCt, primaryIfCt, targetCt, field);
 
         if (childs != null) {
-            final Set<String> methodSet = new HashSet<>();
-            for(CtClass child : childs.values()) {
-                final CtClass ifaceParentCt = child.getInterfaces()[0];
-                CtClass[] parameter = {ifaceParentCt};
-                final String wrapMethodName = "wrap" + ifaceParentCt.getSimpleName();
-                CtMethod wrapMethod = new CtMethod(ifaceParentCt, wrapMethodName, parameter, targetCt);
-                final String signature = getSignature(wrapMethod);
-                if (methodSet.add(signature)) {
-                    wrapMethod.setModifiers(Modifier.FINAL | Modifier.PROTECTED);
-                    wrapMethod.setBody("{ return new " + child.getName() + "(this, $1); }");
-                    targetCt.addMethod(wrapMethod);
-                }
-            }
+            addWrapperMethod(childs, targetCt);
         }
 
         addMethods(primaryIfaceClass, superCt, targetCt, childs);
 
         return targetCt;
+    }
+
+
+    private void addWrapperMethod(Map<String, CtClass> childs, CtClass targetCt) throws NotFoundException, CannotCompileException {
+        final Set<String> methodSet = new HashSet<>();
+        for (CtClass child : childs.values()) {
+            final CtClass ifaceParentCt = child.getInterfaces()[0];
+            CtClass[] parameter = {ifaceParentCt};
+            final String wrapMethodName = "wrap" + ifaceParentCt.getSimpleName();
+            CtMethod wrapMethod = new CtMethod(ifaceParentCt, wrapMethodName, parameter, targetCt);
+            final String signature = getSignature(wrapMethod);
+            if (methodSet.add(signature)) {
+                wrapMethod.setModifiers(Modifier.FINAL | Modifier.PROTECTED);
+                String body = "";
+                body += "{ ";
+                body += " Supplier supplier = new ObjectMaker(" + child.getName() + ".class, this, $1);";
+                body += " return wrap($1, supplier); ";
+                body += "}";
+                wrapMethod.setBody(body);
+                targetCt.addMethod(wrapMethod);
+            }
+        }
     }
 
 
@@ -88,11 +96,11 @@ public class ProxyClassGenerator {
                     newMethod.setExceptionTypes(intfMethod.getExceptionTypes());
                     CtClass child = childs.get(intfMethod.getName());
                     if (child == null) {
-                        newMethod.setBody(delegateMethodBody.replace(methodName, intfMethod.getName()));
+                        newMethod.setBody(delegateMethodBody.apply(intfMethod.getName()));
                     } else {
                         final CtClass ifaceParentCt = child.getInterfaces()[0];
                         final String wrapMethodName = "wrap" + ifaceParentCt.getSimpleName();
-                        newMethod.setBody(this.wrapMethodBody.apply(wrapMethodName).replace(methodName, intfMethod.getName()));
+                        newMethod.setBody(this.wrapMethodBody.apply(wrapMethodName, intfMethod.getName()));
                     }
                     targetCt.addMethod(newMethod);
                 }
@@ -137,7 +145,7 @@ public class ProxyClassGenerator {
 
 
     private CtField addField(CtClass ifaceCt, CtClass targetCt) throws CannotCompileException {
-        CtField field = new CtField(ifaceCt, this.fieldName, targetCt);
+        CtField field = new CtField(ifaceCt, "delegate", targetCt);
         field.setModifiers(Modifier.FINAL | Modifier.PRIVATE);
         targetCt.addField(field);
         return field;
