@@ -2,7 +2,6 @@ package eu.dirk.haase.jdbc.proxy.base;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
-import java.sql.SQLException;
 
 public abstract class ConnectionProxy extends JdbcProxy<Connection> {
 

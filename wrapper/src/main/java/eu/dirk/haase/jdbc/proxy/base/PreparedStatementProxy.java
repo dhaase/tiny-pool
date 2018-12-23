@@ -2,7 +2,6 @@ package eu.dirk.haase.jdbc.proxy.base;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
-import java.sql.SQLException;
 
 public abstract class PreparedStatementProxy extends JdbcProxy<PreparedStatement> {
 

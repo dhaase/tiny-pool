@@ -1,7 +1,6 @@
 package eu.dirk.haase.jdbc.proxy.base;
 
 import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.sql.Statement;
 
 public abstract class ResultSetProxy extends JdbcProxy<ResultSet> {
