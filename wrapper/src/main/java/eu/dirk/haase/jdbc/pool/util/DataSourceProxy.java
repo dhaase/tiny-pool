@@ -1,17 +1,25 @@
 package eu.dirk.haase.jdbc.pool.util;
 
 import javax.sql.DataSource;
+import java.sql.Connection;
 import java.sql.SQLException;
 
-public class DataSourceProxy {
+public abstract class DataSourceProxy {
 
-    public final DataSource delegate;
+    private final DataSource delegate;
 
-    public DataSourceProxy(final DataSource delegate) {
+    protected DataSourceProxy(final DataSource delegate) {
         this.delegate = delegate;
     }
 
-    protected SQLException checkException(SQLException e) {
+
+    public final DataSource getDelegate() {
+        return delegate;
+    }
+
+
+    protected final SQLException checkException(SQLException e) {
         return e;
     }
+
 }
