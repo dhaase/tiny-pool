@@ -30,7 +30,7 @@ public class WeakIdentityHashMap<K, V> extends AbstractMap<K, V> implements Map<
     private Set<K> keySet;
     private Collection<V> valuesCollection;
     private boolean isSoftReference = false;
-    private boolean isEqualIdentity = false;
+    private boolean isEqualityByIdentity = false;
 
     /**
      * Constructs a new empty {@code WeakIdentityHashMap} instance.
@@ -94,27 +94,31 @@ public class WeakIdentityHashMap<K, V> extends AbstractMap<K, V> implements Map<
         return (hash & 0x7FFFFFFF) % length;
     }
 
-    private static int keyHash(boolean isEqualIdentity, Object thisKey) {
+    private static int keyHash(boolean isEqualityByIdentity, Object thisKey) {
         if (thisKey == null) {
             return 0;
         }
-        return isEqualIdentity ? System.identityHashCode(thisKey) : thisKey.hashCode();
+        return isEqualityByIdentity ? System.identityHashCode(thisKey) : thisKey.hashCode();
     }
 
-    private static boolean equalsKey(boolean isEqualIdentity, Object thisKey, Object thatKey) {
+    private static boolean equalsKey(boolean isEqualityByIdentity, Object thisKey, Object thatKey) {
         boolean isEqual = (thisKey == thatKey);
-        if (!isEqual && !isEqualIdentity) {
+        if (!isEqual && !isEqualityByIdentity) {
             isEqual = (thisKey != null ? thisKey.equals(thatKey) : thisKey == thatKey);
         }
         return isEqual;
     }
 
-    public boolean isEqualIdentity() {
-        return isEqualIdentity;
+    public boolean isEqualityByIdentity() {
+        return isEqualityByIdentity;
     }
 
-    public void setEqualIdentity(boolean equalIdentity) {
-        isEqualIdentity = equalIdentity;
+    public void setEqualityByIdentity(boolean isEqualityByIdentity) {
+        if (isEmpty()) {
+            this.isEqualityByIdentity = isEqualityByIdentity;
+        } else {
+            throw new IllegalStateException("Equality by identity can only be changed for an empty map.");
+        }
     }
 
     public boolean isSoftReference() {
@@ -339,10 +343,10 @@ public class WeakIdentityHashMap<K, V> extends AbstractMap<K, V> implements Map<
     private Entry<K, V> getEntry(Object key) {
         poll();
         if (key != null) {
-            int index = bucketIndex(elementData.length, keyHash(isEqualIdentity, key));
+            int index = bucketIndex(elementData.length, keyHash(isEqualityByIdentity, key));
             Entry<K, V> entry = elementData[index];
             while (entry != null) {
-                boolean isEqual = equalsKey(isEqualIdentity, key, entry.get());
+                boolean isEqual = equalsKey(isEqualityByIdentity, key, entry.get());
                 if (isEqual) {
                     return entry;
                 }
@@ -449,7 +453,7 @@ public class WeakIdentityHashMap<K, V> extends AbstractMap<K, V> implements Map<
         int index = 0;
         Entry<K, V> entry;
         if (key != null) {
-            index = bucketIndex(elementData.length, keyHash(isEqualIdentity, key));
+            index = bucketIndex(elementData.length, keyHash(isEqualityByIdentity, key));
             entry = elementData[index];
             while (entry != null && !(key == entry.get())) {
                 entry = entry.getNext();
@@ -464,7 +468,7 @@ public class WeakIdentityHashMap<K, V> extends AbstractMap<K, V> implements Map<
             modCount++;
             if (++elementCount > threshold) {
                 rehash();
-                index = key == null ? 0 : bucketIndex(elementData.length, keyHash(isEqualIdentity, key));
+                index = key == null ? 0 : bucketIndex(elementData.length, keyHash(isEqualityByIdentity, key));
             }
             entry = createEntry(key, value, referenceQueue);
             entry.setNext(elementData[index]);
@@ -478,9 +482,9 @@ public class WeakIdentityHashMap<K, V> extends AbstractMap<K, V> implements Map<
 
     private Entry createEntry(K key, V object, ReferenceQueue<K> queue) {
         if (isSoftReference) {
-            return new SoftEntry<>(key, object, queue, isEqualIdentity);
+            return new SoftEntry<>(key, object, queue, isEqualityByIdentity);
         } else {
-            return new WeakEntry<>(key, object, queue, isEqualIdentity);
+            return new WeakEntry<>(key, object, queue, isEqualityByIdentity);
         }
     }
 
@@ -514,7 +518,7 @@ public class WeakIdentityHashMap<K, V> extends AbstractMap<K, V> implements Map<
         int index = 0;
         Entry<K, V> entry, last = null;
         if (key != null) {
-            index = bucketIndex(elementData.length, keyHash(isEqualIdentity, key));
+            index = bucketIndex(elementData.length, keyHash(isEqualityByIdentity, key));
             entry = elementData[index];
             while (entry != null && !(key == entry.get())) {
                 last = entry;
@@ -551,7 +555,7 @@ public class WeakIdentityHashMap<K, V> extends AbstractMap<K, V> implements Map<
 
     private interface Entry<K, V> extends Map.Entry<K, V> {
 
-        boolean isEqualIdentity();
+        boolean isEqualityByIdentity();
 
         boolean isNull();
 
@@ -563,14 +567,14 @@ public class WeakIdentityHashMap<K, V> extends AbstractMap<K, V> implements Map<
 
         int hash();
 
-        default boolean equalsEntry(Entry<K, V> thisEntry, Object other) {
+        default boolean equalsEntry(Object other) {
             if (!(other instanceof Map.Entry)) {
                 return false;
             }
             Map.Entry<?, ?> entry = (Map.Entry<?, ?>) other;
-            Object key = thisEntry.get();
-            return (equalsKey(isEqualIdentity(), key, entry.getKey()))
-                    && (thisEntry.getValue() == null ? thisEntry.getValue() == entry.getValue() : thisEntry.getValue().equals(entry.getValue()));
+            Object key = this.getKey();
+            return (equalsKey(isEqualityByIdentity(), key, entry.getKey()))
+                    && (this.getValue() == null ? this.getValue() == entry.getValue() : this.getValue().equals(entry.getValue()));
         }
 
         interface Type<R, K, V> {
@@ -584,24 +588,24 @@ public class WeakIdentityHashMap<K, V> extends AbstractMap<K, V> implements Map<
         boolean isNull;
         V value;
         Entry<K, V> next;
-        boolean isEqualIdentity;
+        boolean isEqualityByIdentity;
 
-        SoftEntry(K key, V object, ReferenceQueue<K> queue, boolean isEqualIdentity) {
+        SoftEntry(K key, V object, ReferenceQueue<K> queue, boolean isEqualityByIdentity) {
             super(key, queue);
             this.isNull = key == null;
-            this.hash = keyHash(isEqualIdentity, key);
+            this.hash = keyHash(isEqualityByIdentity, key);
             this.value = object;
-            this.isEqualIdentity = isEqualIdentity;
+            this.isEqualityByIdentity = isEqualityByIdentity;
         }
 
         @Override
-        public boolean isEqualIdentity() {
-            return isEqualIdentity;
+        public boolean isEqualityByIdentity() {
+            return isEqualityByIdentity;
         }
 
         @Override
         public boolean equals(Object other) {
-            return equalsEntry(this, other);
+            return equalsEntry(other);
         }
 
         @Override
@@ -659,19 +663,19 @@ public class WeakIdentityHashMap<K, V> extends AbstractMap<K, V> implements Map<
         boolean isNull;
         V value;
         Entry<K, V> next;
-        boolean isEqualIdentity;
+        boolean isEqualityByIdentity;
 
-        WeakEntry(K key, V object, ReferenceQueue<K> queue, boolean isEqualIdentity) {
+        WeakEntry(K key, V object, ReferenceQueue<K> queue, boolean isEqualityByIdentity) {
             super(key, queue);
             this.isNull = key == null;
-            this.hash = keyHash(isEqualIdentity, key);
+            this.hash = keyHash(isEqualityByIdentity, key);
             this.value = object;
-            this.isEqualIdentity = isEqualIdentity;
+            this.isEqualityByIdentity = isEqualityByIdentity;
         }
 
         @Override
-        public boolean isEqualIdentity() {
-            return isEqualIdentity;
+        public boolean isEqualityByIdentity() {
+            return isEqualityByIdentity;
         }
 
         @Override
@@ -686,7 +690,7 @@ public class WeakIdentityHashMap<K, V> extends AbstractMap<K, V> implements Map<
 
         @Override
         public boolean equals(Object other) {
-            return equalsEntry(this, other);
+            return equalsEntry(other);
         }
 
         @Override

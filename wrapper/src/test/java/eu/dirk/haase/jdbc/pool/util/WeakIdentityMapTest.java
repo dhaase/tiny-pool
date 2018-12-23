@@ -11,8 +11,8 @@ public class WeakIdentityMapTest {
     @Test
     public void test() {
         WeakIdentityHashMap<MyKey, String> map = new WeakIdentityHashMap<>();
-        map.setSoftReference(true);
-        map.setEqualIdentity(false);
+        map.setSoftReference(false);
+        map.setEqualityByIdentity(false);
 
         final MyKey key1 = new MyKey();
         final MyKey key2 = new MyKey();
