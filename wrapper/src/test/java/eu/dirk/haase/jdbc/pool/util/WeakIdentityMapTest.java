@@ -9,7 +9,7 @@ import org.junit.runners.BlockJUnit4ClassRunner;
 public class WeakIdentityMapTest {
 
     @Test
-    public void test() {
+    public void test() throws InterruptedException {
         WeakIdentityHashMap<MyKey, String> map = new WeakIdentityHashMap<>();
         map.setSoftReference(false);
         map.setEqualityByIdentity(false);
@@ -20,9 +20,14 @@ public class WeakIdentityMapTest {
         System.gc();
         System.gc();
         System.gc();
+        System.gc();
+        System.gc();
+        System.gc();
+        Thread.sleep(1000L);
 
         System.out.println(map.get(key2));
         System.out.println(map.size());
+        System.out.println(map.getReclaimedEntryCount());
     }
 
 
