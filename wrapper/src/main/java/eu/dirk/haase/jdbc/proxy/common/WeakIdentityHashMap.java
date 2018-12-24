@@ -4,6 +4,7 @@ import java.lang.ref.ReferenceQueue;
 import java.lang.ref.SoftReference;
 import java.lang.ref.WeakReference;
 import java.util.*;
+import java.util.function.Function;
 
 /**
  * WeakIdentityHashMap is an implementation of IdentityHashMap with keys which are WeakReferences. A
@@ -15,6 +16,7 @@ import java.util.*;
  * @see java.util.IdentityHashMap
  * @see java.util.WeakHashMap
  * @see java.lang.ref.WeakReference
+ * @see java.lang.ref.SoftReference
  */
 public class WeakIdentityHashMap<K, V> extends AbstractMap<K, V> implements Map<K, V> {
     private static final int DEFAULT_SIZE = 16;
@@ -274,10 +276,6 @@ public class WeakIdentityHashMap<K, V> extends AbstractMap<K, V> implements Map<
             };
         }
         return keySet;
-    }
-
-    private Iterator<Map.Entry<K, V>> getEntryIterator() {
-        return new HashIterator<>(entry -> entry);
     }
 
     /**
@@ -580,10 +578,6 @@ public class WeakIdentityHashMap<K, V> extends AbstractMap<K, V> implements Map<
                     && (this.getValue() == null ? this.getValue() == entry.getValue() : this.getValue().equals(entry.getValue()));
         }
 
-        interface Type<R, K, V> {
-            R get(Map.Entry<K, V> entry);
-        }
-
     }
 
     private static final class SoftEntry<K, V> extends SoftReference<K> implements Entry<K, V> {
@@ -736,13 +730,13 @@ public class WeakIdentityHashMap<K, V> extends AbstractMap<K, V> implements Map<
     }
 
     private class HashIterator<R> implements Iterator<R> {
-        private final Entry.Type<R, K, V> type;
+        private final Function<Entry<K, V>, R> entryFuntion;
         private int position = 0, expectedModCount;
         private Entry<K, V> currentEntry, nextEntry;
         private K nextKey;
 
-        HashIterator(Entry.Type<R, K, V> type) {
-            this.type = type;
+        HashIterator(Function<Entry<K, V>, R> entryFuntion) {
+            this.entryFuntion = entryFuntion;
             expectedModCount = modCount;
         }
 
@@ -777,7 +771,7 @@ public class WeakIdentityHashMap<K, V> extends AbstractMap<K, V> implements Map<
                 if (hasNext()) {
                     currentEntry = nextEntry;
                     nextEntry = currentEntry.getNext();
-                    R result = type.get(currentEntry);
+                    R result = entryFuntion.apply(currentEntry);
                     // free the key
                     nextKey = null;
                     return result;
