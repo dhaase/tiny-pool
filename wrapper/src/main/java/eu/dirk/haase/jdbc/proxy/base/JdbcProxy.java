@@ -1,14 +1,14 @@
 package eu.dirk.haase.jdbc.proxy.base;
 
-import eu.dirk.haase.jdbc.proxy.common.IdentityCache;
 import eu.dirk.haase.jdbc.proxy.common.Unwrapper;
 
 import java.sql.SQLException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
-import java.util.function.Function;
 
+/**
+ * Basis-Klasse f&uuml;r alle JDBC-Klassen die eingepackt werden sollen.
+ *
+ * @param <T1> der Typ der jeweiligen abgeleiteten JDBC-Klasse.
+ */
 public abstract class JdbcProxy<T1> {
 
     private final T1 delegate;
