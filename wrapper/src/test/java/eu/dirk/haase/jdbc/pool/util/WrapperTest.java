@@ -19,7 +19,7 @@ import static org.assertj.core.api.Java6Assertions.assertThat;
 @RunWith(BlockJUnit4ClassRunner.class)
 public class WrapperTest {
 
-    private final Map<String, String> interfaceToClassMap = new HashMap<>();
+    private final Map<String, Object> interfaceToClassMap = new HashMap<>();
 
     @Before
     public void setUp() {

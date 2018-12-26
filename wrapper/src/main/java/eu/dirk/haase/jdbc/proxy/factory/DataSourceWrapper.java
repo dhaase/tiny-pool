@@ -15,9 +15,9 @@ public class DataSourceWrapper {
     private Constructor<?> dataSourceConstructor;
     private Constructor<?> xaDataSourceConstructor;
 
-    private final Map<String, String> interfaceToClassMap;
+    private final Map<String, Object> interfaceToClassMap;
 
-    public DataSourceWrapper(final Map<String, String> interfaceToClassMap) throws Exception {
+    public DataSourceWrapper(final Map<String, Object> interfaceToClassMap) throws Exception {
         this.interfaceToClassMap = interfaceToClassMap;
         this.dataSourceConstructor = getDataSourceConstructor();
         this.xaDataSourceConstructor = getXADataSourceConstructor();
@@ -34,8 +34,11 @@ public class DataSourceWrapper {
     }
 
     private Class<?> loadClass(final Class<?> iface) throws ClassNotFoundException {
-        final String className = interfaceToClassMap.get(iface.getName());
-        return Class.forName(className);
+        final Object proxyClass = interfaceToClassMap.get(iface.getName());
+        if (proxyClass instanceof String){
+            return Class.forName(proxyClass.toString());
+        }
+        return (Class<?>) proxyClass;
     }
 
     private Constructor<?> getDataSourceConstructor() throws ClassNotFoundException {

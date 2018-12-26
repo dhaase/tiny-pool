@@ -46,7 +46,7 @@ public class JavassistProxyClasses {
     private CtClass xaconnectionCt;
     private CtClass xadataSourceCt;
 
-    private final Map<String, String> interfaceToClassMap;
+    private final Map<String, Object> interfaceToClassMap;
 
     public JavassistProxyClasses() {
         this(CLASS_NAME_FUN);
@@ -153,7 +153,7 @@ public class JavassistProxyClasses {
         return this.xaResourceGen.generate(classPool, XAConnection.class, new HashMap<>());
     }
 
-    public Map<String, String> generate() throws Exception {
+    public Map<String, Object> generate() throws Exception {
         this.classPool = createClassPool();
 
         this.resultSetCt = createResultSet();
