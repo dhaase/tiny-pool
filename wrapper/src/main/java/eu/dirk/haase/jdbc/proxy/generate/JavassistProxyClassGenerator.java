@@ -16,9 +16,10 @@ public class JavassistProxyClassGenerator {
     private final Class<?> primaryIfaceClass;
     private final Class<?> superClass;
     private final boolean isWrapMethodConcurrent;
+    private final Set<String> allMethodSet = new HashSet<>();
+    private final Set<String> allFieldSet = new HashSet<>();
 
     private ClassPool classPool;
-
 
     public JavassistProxyClassGenerator(final Function<String, String> classNameFun, final Class<?> primaryIfaceClass, final Class<?> superClass, boolean isWrapMethodConcurrent) {
         this.classNameFun = classNameFun;
@@ -31,40 +32,31 @@ public class JavassistProxyClassGenerator {
 
     public <T> CtClass generate(final ClassPool classPool, final Class<?> parentIfaceClass, final Map<String, CtClass> childs) throws Exception {
         this.classPool = classPool;
-
         final String newClassName = classNameFun.apply(superClass.getName());
-
-        CtClass parentIfCt = null;
-        final CtClass primaryIfCt = classPool.getCtClass(primaryIfaceClass.getName());
         final CtClass superCt = classPool.getCtClass(superClass.getName());
         final CtClass targetCt = classPool.makeClass(newClassName, superCt);
-
         targetCt.setModifiers(Modifier.FINAL | Modifier.PUBLIC);
+
+        CtClass parentIfCt = (parentIfaceClass != null ? classPool.getCtClass(parentIfaceClass.getName()) : null);
+
+        final CtClass primaryIfCt = classPool.getCtClass(primaryIfaceClass.getName());
         targetCt.addInterface(primaryIfCt);
-
-        if (parentIfaceClass != null) {
-            parentIfCt = classPool.getCtClass(parentIfaceClass.getName());
-        }
-
         final CtField field = addField(targetCt, primaryIfCt, "delegate");
         CtConstructor targetConstructorCt = addConstructor(targetCt, parentIfCt, primaryIfCt, field);
-
         if (childs != null) {
             addWrapMethod(targetCt, targetConstructorCt, childs, isWrapMethodConcurrent);
         }
-
         addAPIMethods(targetCt, primaryIfaceClass, superCt, childs);
 
         return targetCt;
     }
 
     private <T> void addAPIMethods(final CtClass targetCt, final Class<T> primaryInterface, final CtClass superCt, final Map<String, CtClass> childs) throws NotFoundException, CannotCompileException {
-        final Set<String> methodSet = new HashSet<>();
-        excludeFinalMethods(superCt, methodSet);
+        excludeFinalMethods(superCt, allMethodSet);
         CtClass intfClass = classPool.getCtClass(primaryInterface.getName());
         for (CtMethod intfMethod : intfClass.getMethods()) {
             final String signature = getSignature(intfMethod);
-            if (methodSet.add(signature)) {
+            if (allMethodSet.add(signature)) {
                 CtMethod newMethod = new CtMethod(intfMethod.getReturnType(), intfMethod.getName(), intfMethod.getParameterTypes(), targetCt);
                 newMethod.setExceptionTypes(intfMethod.getExceptionTypes());
                 CtClass child = childs.get(intfMethod.getName());
@@ -100,32 +92,32 @@ public class JavassistProxyClassGenerator {
         return constructor;
     }
 
-    private CtField addField(CtClass targetCt, CtClass ifaceCt, String fieldName) throws CannotCompileException {
-        CtField field = new CtField(ifaceCt, fieldName, targetCt);
-        field.setModifiers(Modifier.FINAL | Modifier.PRIVATE);
-        targetCt.addField(field);
-        return field;
+    private CtField addField(CtClass targetCt, CtClass ifaceCt, String fieldName) throws CannotCompileException, NotFoundException {
+        if (allFieldSet.add(fieldName)) {
+            CtField field = new CtField(ifaceCt, fieldName, targetCt);
+            field.setModifiers(Modifier.FINAL | Modifier.PRIVATE);
+            targetCt.addField(field);
+            return field;
+        } else {
+            return targetCt.getDeclaredField(fieldName);
+        }
     }
 
     private void addWrapMethod(CtClass targetCt, CtConstructor targetConstructorCt, Map<String, CtClass> childs, boolean isWrapMethodConcurrent) throws NotFoundException, CannotCompileException {
-        final Set<String> fieldSet = new HashSet<>();
-        final Set<String> methodSet = new HashSet<>();
         final CtClass factoryCt = classPool.getCtClass(Function.class.getName());
 
         for (CtClass child : childs.values()) {
             final CtClass ifaceParentCt = child.getInterfaces()[0];
             // fuege das Supplier-Field mit Initialisierung als Factory-Function hinzu:
             final String objectMakerFieldName = "new" + ifaceParentCt.getSimpleName();
-            if (fieldSet.add(objectMakerFieldName)) {
-                addField(targetCt, factoryCt, objectMakerFieldName);
-                targetConstructorCt.insertAfter(objectMakerFieldName + " = new ObjectMaker(" + child.getName() + ".class, $1);");
-            }
+            addField(targetCt, factoryCt, objectMakerFieldName);
+            targetConstructorCt.insertAfter(objectMakerFieldName + " = new ObjectMaker(" + child.getName() + ".class, $1);");
             // fuege die Wrap-Methode hinzu:
             CtClass[] parameter = {ifaceParentCt};
             final String wrapMethodName = "wrap" + ifaceParentCt.getSimpleName();
             CtMethod wrapMethod = new CtMethod(ifaceParentCt, wrapMethodName, parameter, targetCt);
             final String signature = getSignature(wrapMethod);
-            if (methodSet.add(signature)) {
+            if (allMethodSet.add(signature)) {
                 wrapMethod.setModifiers(Modifier.FINAL | Modifier.PROTECTED);
                 String superWrapMethod = (isWrapMethodConcurrent ? "wrapConcurrent" : "wrap");
                 String body = "";

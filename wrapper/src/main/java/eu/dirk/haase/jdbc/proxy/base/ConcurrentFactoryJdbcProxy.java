@@ -27,7 +27,7 @@ import java.util.function.Function;
  *
  * @param <T> der Typ der jeweiligen abgeleiteten JDBC-Klasse.
  */
-public class ConcurrentFactoryJdbcProxy<T> extends FactoryJdbcProxy<T> {
+public abstract class ConcurrentFactoryJdbcProxy<T> extends FactoryJdbcProxy<T> {
     private final Lock lock;
 
     protected ConcurrentFactoryJdbcProxy(T delegate) {
