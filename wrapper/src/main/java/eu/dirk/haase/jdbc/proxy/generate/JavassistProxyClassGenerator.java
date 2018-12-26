@@ -10,15 +10,14 @@ import java.util.function.Function;
 
 public class JavassistProxyClassGenerator {
 
+    private final Set<String> allFieldSet = new HashSet<>();
+    private final Set<String> allMethodSet = new HashSet<>();
     private final Function<String, String> delegateMethodBody;
-    private final BiFunction<String, String, String> wrapMethodBody;
+    private final boolean isWrapMethodConcurrent;
+    private final String newClassName;
     private final Class<?> primaryIfaceClass;
     private final Class<?> superClass;
-    private final boolean isWrapMethodConcurrent;
-    private final Set<String> allMethodSet = new HashSet<>();
-    private final Set<String> allFieldSet = new HashSet<>();
-    private final String newClassName;
-
+    private final BiFunction<String, String, String> wrapMethodBody;
     private ClassPool classPool;
 
     public JavassistProxyClassGenerator(final BiFunction<String, Class<?>, String> classNameFun, final Class<?> primaryIfaceClass, final Class<?> superClass, boolean isWrapMethodConcurrent) {
@@ -28,27 +27,6 @@ public class JavassistProxyClassGenerator {
         this.primaryIfaceClass = primaryIfaceClass;
         this.superClass = superClass;
         this.isWrapMethodConcurrent = isWrapMethodConcurrent;
-    }
-
-    public <T> CtClass generate(final ClassPool classPool, final Class<?> parentIfaceClass, final Map<String, CtClass> childs) throws Exception {
-        this.classPool = classPool;
-
-        final CtClass parentIfCt = (parentIfaceClass != null ? classPool.getCtClass(parentIfaceClass.getName()) : null);
-        final CtClass superCt = classPool.getCtClass(superClass.getName());
-        final CtClass targetCt = classPool.makeClass(newClassName, superCt);
-        targetCt.setModifiers(Modifier.FINAL | Modifier.PUBLIC);
-
-        final CtClass primaryIfCt = classPool.getCtClass(primaryIfaceClass.getName());
-        targetCt.addInterface(primaryIfCt);
-
-        final CtField field = addField(targetCt, primaryIfCt, "delegate");
-        final CtConstructor targetConstructorCt = addConstructor(targetCt, parentIfCt, primaryIfCt, field);
-        if (childs != null) {
-            addWrapMethod(targetCt, targetConstructorCt, childs, isWrapMethodConcurrent);
-        }
-        addAPIMethods(targetCt, primaryIfaceClass, superCt, childs);
-
-        return targetCt;
     }
 
     private <T> void addAPIMethods(final CtClass targetCt, final Class<T> primaryInterface, final CtClass superCt, final Map<String, CtClass> childs) throws NotFoundException, CannotCompileException {
@@ -137,6 +115,27 @@ public class JavassistProxyClassGenerator {
                 methodSet.add(signature);
             }
         }
+    }
+
+    public <T> CtClass generate(final ClassPool classPool, final Class<?> parentIfaceClass, final Map<String, CtClass> childs) throws Exception {
+        this.classPool = classPool;
+
+        final CtClass parentIfCt = (parentIfaceClass != null ? classPool.getCtClass(parentIfaceClass.getName()) : null);
+        final CtClass superCt = classPool.getCtClass(superClass.getName());
+        final CtClass targetCt = classPool.makeClass(newClassName, superCt);
+        targetCt.setModifiers(Modifier.FINAL | Modifier.PUBLIC);
+
+        final CtClass primaryIfCt = classPool.getCtClass(primaryIfaceClass.getName());
+        targetCt.addInterface(primaryIfCt);
+
+        final CtField field = addField(targetCt, primaryIfCt, "delegate");
+        final CtConstructor targetConstructorCt = addConstructor(targetCt, parentIfCt, primaryIfCt, field);
+        if (childs != null) {
+            addWrapMethod(targetCt, targetConstructorCt, childs, isWrapMethodConcurrent);
+        }
+        addAPIMethods(targetCt, primaryIfaceClass, superCt, childs);
+
+        return targetCt;
     }
 
     private String getSignature(CtMethod intfMethod) {

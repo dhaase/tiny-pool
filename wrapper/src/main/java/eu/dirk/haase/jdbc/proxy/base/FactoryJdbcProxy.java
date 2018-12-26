@@ -28,17 +28,17 @@ import java.util.function.Function;
  * <li>{@link XAResource}</li>
  * </ol>
  *
- * @param <T> der Typ der jeweiligen abgeleiteten JDBC-Klasse.
+ * @param <T1> der Typ der jeweiligen abgeleiteten JDBC-Klasse.
  */
-public abstract class FactoryJdbcProxy<T> extends JdbcProxy<T> {
+public abstract class FactoryJdbcProxy<T1> extends JdbcProxy<T1> {
     private final IdentityCache identityCache;
 
-    protected FactoryJdbcProxy(T delegate) {
+    protected FactoryJdbcProxy(T1 delegate) {
         super(delegate);
         this.identityCache = new IdentityCache();
     }
 
-    protected final <T> T wrap(T delegate, Function<T, T> objectMaker) {
+    protected final <T2> T2 wrap(T2 delegate, Function<T2, T2> objectMaker) {
         return this.identityCache.get(delegate, objectMaker);
     }
 

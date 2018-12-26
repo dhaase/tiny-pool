@@ -1,26 +1,18 @@
 package eu.dirk.haase.jdbc.proxy.generate;
 
-import eu.dirk.haase.jdbc.proxy.base.*;
-import javassist.CannotCompileException;
 import javassist.ClassPool;
 import javassist.CtClass;
 import javassist.LoaderClassPath;
-import javassist.bytecode.ClassFile;
 
 import javax.sql.*;
 import javax.transaction.xa.XAResource;
-import java.io.IOException;
 import java.sql.*;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 
 public class JavassistProxyClasses {
-
-    private static final String prefix = "W";
-    private static final BiFunction<String, Class<?>, String> CLASS_NAME_FUN = (cn,iface) -> cn.replaceAll("(.+)\\.(\\w+)", "$1." + prefix + "$2");
-
-    private ClassPool classPool;
 
     private final JavassistProxyClassGenerator cStatementGen;
     private final JavassistProxyClassGenerator connectionGen;
@@ -33,8 +25,8 @@ public class JavassistProxyClasses {
     private final JavassistProxyClassGenerator xaResourceGen;
     private final JavassistProxyClassGenerator xaconnectionGen;
     private final JavassistProxyClassGenerator xadataSourceGen;
-
     private CtClass cStatementCt;
+    private ClassPool classPool;
     private CtClass connectionCt;
     private CtClass connectionPoolDataSourceCt;
     private CtClass dataSourceCt;
@@ -46,28 +38,28 @@ public class JavassistProxyClasses {
     private CtClass xaconnectionCt;
     private CtClass xadataSourceCt;
 
-    private final Map<String, Object> interfaceToClassMap;
+    public JavassistProxyClasses(final BiFunction<String, Class<?>, String> classNameFun, final Map<Class<?>, Class<?>> iface2ClassMap) {
+        this.resultSetGen = new JavassistProxyClassGenerator(classNameFun, ResultSet.class, iface2ClassMap.get(ResultSet.class), false);
+        this.connectionGen = new JavassistProxyClassGenerator(classNameFun, Connection.class, iface2ClassMap.get(Connection.class), false);
 
-    public JavassistProxyClasses() {
-        this(CLASS_NAME_FUN);
+        this.pStatementGen = new JavassistProxyClassGenerator(classNameFun, PreparedStatement.class, iface2ClassMap.get(PreparedStatement.class), false);
+        this.cStatementGen = new JavassistProxyClassGenerator(classNameFun, CallableStatement.class, iface2ClassMap.get(CallableStatement.class), false);
+        this.statementGen = new JavassistProxyClassGenerator(classNameFun, Statement.class, iface2ClassMap.get(Statement.class), false);
+
+        this.dataSourceGen = new JavassistProxyClassGenerator(classNameFun, DataSource.class, iface2ClassMap.get(DataSource.class), true);
+        this.xaconnectionGen = new JavassistProxyClassGenerator(classNameFun, XAConnection.class, iface2ClassMap.get(XAConnection.class), true);
+        this.xadataSourceGen = new JavassistProxyClassGenerator(classNameFun, XADataSource.class, iface2ClassMap.get(XADataSource.class), true);
+        this.xaResourceGen = new JavassistProxyClassGenerator(classNameFun, XAResource.class, iface2ClassMap.get(XAResource.class), true);
+        this.pooledConnectionGen = new JavassistProxyClassGenerator(classNameFun, PooledConnection.class, iface2ClassMap.get(PooledConnection.class), true);
+        this.connectionPoolDataSourceGen = new JavassistProxyClassGenerator(classNameFun, ConnectionPoolDataSource.class, iface2ClassMap.get(ConnectionPoolDataSource.class), true);
     }
 
-    public JavassistProxyClasses(final BiFunction<String, Class<?>, String> classNameFun) {
-        this.interfaceToClassMap = new HashMap<>();
-
-        this.resultSetGen = new JavassistProxyClassGenerator(classNameFun, ResultSet.class, ResultSetProxy.class, false);
-        this.connectionGen = new JavassistProxyClassGenerator(classNameFun, Connection.class, ConnectionProxy.class, false);
-
-        this.pStatementGen = new JavassistProxyClassGenerator(classNameFun, PreparedStatement.class, PreparedStatementProxy.class, false);
-        this.cStatementGen = new JavassistProxyClassGenerator(classNameFun, CallableStatement.class, CallableStatementProxy.class, false);
-        this.statementGen = new JavassistProxyClassGenerator(classNameFun, Statement.class, StatementProxy.class, false);
-
-        this.dataSourceGen = new JavassistProxyClassGenerator(classNameFun, DataSource.class, DataSourceProxy.class, true);
-        this.xaconnectionGen = new JavassistProxyClassGenerator(classNameFun, XAConnection.class, XAConnectionProxy.class, true);
-        this.xadataSourceGen = new JavassistProxyClassGenerator(classNameFun, XADataSource.class, XADataSourceProxy.class, true);
-        this.xaResourceGen = new JavassistProxyClassGenerator(classNameFun, XAResource.class, XAResourceProxy.class, true);
-        this.pooledConnectionGen = new JavassistProxyClassGenerator(classNameFun, PooledConnection.class, PooledConnectionProxy.class, true);
-        this.connectionPoolDataSourceGen = new JavassistProxyClassGenerator(classNameFun, ConnectionPoolDataSource.class, ConnectionPoolDataSourceProxy.class, true);
+    private CtClass createCallableStatement(CtClass resultSetCt) throws Exception {
+        final Map<String, CtClass> childs3 = new HashMap<>();
+        childs3.put("executeQuery", resultSetCt);
+        childs3.put("getResultSet", resultSetCt);
+        childs3.put("getGeneratedKeys", resultSetCt);
+        return this.statementGen.generate(classPool, Connection.class, childs3);
     }
 
     private ClassPool createClassPool() {
@@ -78,16 +70,8 @@ public class JavassistProxyClasses {
         classPool.importPackage("java.util.function");
         classPool.importPackage("java.util.concurrent.locks");
         classPool.importPackage(ObjectMaker.class.getPackage().getName());
-        classPool.appendClassPath(new LoaderClassPath(JavassistProxyFactory.class.getClassLoader()));
+        classPool.appendClassPath(new LoaderClassPath(JavassistProxyClasses.class.getClassLoader()));
         return classPool;
-    }
-
-    private CtClass createCallableStatement(CtClass resultSetCt) throws Exception {
-        final Map<String, CtClass> childs3 = new HashMap<>();
-        childs3.put("executeQuery", resultSetCt);
-        childs3.put("getResultSet", resultSetCt);
-        childs3.put("getGeneratedKeys", resultSetCt);
-        return this.statementGen.generate(classPool, Connection.class, childs3);
     }
 
     private CtClass createConnection(CtClass cStatementCt, CtClass pStatementCt, CtClass statementCt) throws Exception {
@@ -110,18 +94,36 @@ public class JavassistProxyClasses {
         return this.dataSourceGen.generate(classPool, null, childs1);
     }
 
-    private CtClass createPreparedStatement(CtClass resultSetCt) throws Exception {
-        final Map<String, CtClass> childs4 = new HashMap<>();
-        childs4.put("executeQuery", resultSetCt);
-        childs4.put("getResultSet", resultSetCt);
-        childs4.put("getGeneratedKeys", resultSetCt);
-        return this.pStatementGen.generate(classPool, Connection.class, childs4);
+    private Map<String, Object> createInterfaceToClassMap(final Function<CtClass, Object> valueFunction) throws Exception {
+        final Map<String, Object> interfaceToClassMap = new HashMap<>();
+
+        interfaceToClassMap.put(ResultSet.class.getName(), valueFunction.apply(this.resultSetCt));
+        interfaceToClassMap.put(CallableStatement.class.getName(), valueFunction.apply(this.cStatementCt));
+        interfaceToClassMap.put(PreparedStatement.class.getName(), valueFunction.apply(this.pStatementCt));
+        interfaceToClassMap.put(Statement.class.getName(), valueFunction.apply(this.statementCt));
+        interfaceToClassMap.put(Connection.class.getName(), valueFunction.apply(this.connectionCt));
+        interfaceToClassMap.put(DataSource.class.getName(), valueFunction.apply(this.dataSourceCt));
+        interfaceToClassMap.put(XAResource.class.getName(), valueFunction.apply(this.xaResourceCt));
+        interfaceToClassMap.put(XAConnection.class.getName(), valueFunction.apply(this.xaconnectionCt));
+        interfaceToClassMap.put(XADataSource.class.getName(), valueFunction.apply(this.xadataSourceCt));
+        interfaceToClassMap.put(PooledConnection.class.getName(), valueFunction.apply(this.pooledConnectionCt));
+        interfaceToClassMap.put(ConnectionPoolDataSource.class.getName(), valueFunction.apply(this.connectionPoolDataSourceCt));
+
+        return interfaceToClassMap;
     }
 
     private CtClass createPooledConnection(CtClass connectionCt) throws Exception {
         final Map<String, CtClass> childsc = new HashMap<>();
         childsc.put("getConnection", connectionCt);
         return this.pooledConnectionGen.generate(classPool, ConnectionPoolDataSource.class, childsc);
+    }
+
+    private CtClass createPreparedStatement(CtClass resultSetCt) throws Exception {
+        final Map<String, CtClass> childs4 = new HashMap<>();
+        childs4.put("executeQuery", resultSetCt);
+        childs4.put("getResultSet", resultSetCt);
+        childs4.put("getGeneratedKeys", resultSetCt);
+        return this.pStatementGen.generate(classPool, Connection.class, childs4);
     }
 
     private CtClass createResultSet() throws Exception {
@@ -136,12 +138,6 @@ public class JavassistProxyClasses {
         return this.cStatementGen.generate(classPool, Connection.class, childs5);
     }
 
-    private CtClass createXADataSource(CtClass xaconnectionCt) throws Exception {
-        final Map<String, CtClass> childsb = new HashMap<>();
-        childsb.put("getXAConnection", xaconnectionCt);
-        return this.xadataSourceGen.generate(classPool, null, childsb);
-    }
-
     private CtClass createXAConnection(CtClass connectionCt, CtClass xaResourceCt) throws Exception {
         final Map<String, CtClass> childsa = new HashMap<>();
         childsa.put("getConnection", connectionCt);
@@ -149,11 +145,17 @@ public class JavassistProxyClasses {
         return this.xaconnectionGen.generate(classPool, XADataSource.class, childsa);
     }
 
+    private CtClass createXADataSource(CtClass xaconnectionCt) throws Exception {
+        final Map<String, CtClass> childsb = new HashMap<>();
+        childsb.put("getXAConnection", xaconnectionCt);
+        return this.xadataSourceGen.generate(classPool, null, childsb);
+    }
+
     private CtClass createXAResource() throws Exception {
         return this.xaResourceGen.generate(classPool, XAConnection.class, new HashMap<>());
     }
 
-    public Map<String, Object> generate() throws Exception {
+    public Map<String, Object> generate(final Function<CtClass, Object> valueFunction) throws Exception {
         this.classPool = createClassPool();
 
         this.resultSetCt = createResultSet();
@@ -168,38 +170,7 @@ public class JavassistProxyClasses {
         this.pooledConnectionCt = createPooledConnection(connectionCt);
         this.connectionPoolDataSourceCt = createConnectionPoolDataSource(pooledConnectionCt);
 
-        interfaceToClassMap.put(ResultSet.class.getName(), this.resultSetCt.getName());
-        interfaceToClassMap.put(CallableStatement.class.getName(), this.cStatementCt.getName());
-        interfaceToClassMap.put(PreparedStatement.class.getName(), this.pStatementCt.getName());
-        interfaceToClassMap.put(Statement.class.getName(), this.statementCt.getName());
-        interfaceToClassMap.put(Connection.class.getName(), this.connectionCt.getName());
-        interfaceToClassMap.put(DataSource.class.getName(), this.dataSourceCt.getName());
-        interfaceToClassMap.put(XAResource.class.getName(), this.xaResourceCt.getName());
-        interfaceToClassMap.put(XAConnection.class.getName(), this.xaconnectionCt.getName());
-        interfaceToClassMap.put(XADataSource.class.getName(), this.xadataSourceCt.getName());
-        interfaceToClassMap.put(PooledConnection.class.getName(), this.pooledConnectionCt.getName());
-        interfaceToClassMap.put(ConnectionPoolDataSource.class.getName(), this.connectionPoolDataSourceCt.getName());
-
-        return interfaceToClassMap;
-    }
-
-    public void writeFile() throws CannotCompileException, IOException {
-        writeFile(dataSourceCt);
-        writeFile(connectionCt);
-        writeFile(pStatementCt);
-        writeFile(cStatementCt);
-        writeFile(statementCt);
-        writeFile(resultSetCt);
-        writeFile(xaconnectionCt);
-        writeFile(xadataSourceCt);
-        writeFile(xaResourceCt);
-        writeFile(pooledConnectionCt);
-        writeFile(connectionPoolDataSourceCt);
-    }
-
-    private void writeFile(final CtClass dataSourceCt) throws CannotCompileException, IOException {
-        dataSourceCt.getClassFile().setMajorVersion(ClassFile.JAVA_8);
-        dataSourceCt.writeFile("target/classes");
+        return createInterfaceToClassMap(valueFunction);
     }
 
 }

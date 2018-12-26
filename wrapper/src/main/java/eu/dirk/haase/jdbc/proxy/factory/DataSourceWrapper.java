@@ -1,21 +1,21 @@
 package eu.dirk.haase.jdbc.proxy.factory;
 
-import eu.dirk.haase.jdbc.proxy.base.*;
+import eu.dirk.haase.jdbc.proxy.base.ConnectionPoolDataSourceHybrid;
+import eu.dirk.haase.jdbc.proxy.base.ConnectionPoolXADataSourceHybrid;
+import eu.dirk.haase.jdbc.proxy.base.XADataSourceHybrid;
 
 import javax.sql.ConnectionPoolDataSource;
 import javax.sql.DataSource;
 import javax.sql.XADataSource;
 import java.lang.reflect.Constructor;
 import java.util.Map;
-import java.util.function.BiFunction;
 
 public class DataSourceWrapper {
 
+    private final Map<String, Object> interfaceToClassMap;
     private Constructor<?> connectionPoolDataSourceConstructor;
     private Constructor<?> dataSourceConstructor;
     private Constructor<?> xaDataSourceConstructor;
-
-    private final Map<String, Object> interfaceToClassMap;
 
     public DataSourceWrapper(final Map<String, Object> interfaceToClassMap) throws Exception {
         this.interfaceToClassMap = interfaceToClassMap;
@@ -31,14 +31,6 @@ public class DataSourceWrapper {
             connectionPoolDataSourceConstructor = declaredConstructors[0];
         }
         return connectionPoolDataSourceConstructor;
-    }
-
-    private Class<?> loadClass(final Class<?> iface) throws ClassNotFoundException {
-        final Object proxyClass = interfaceToClassMap.get(iface.getName());
-        if (proxyClass instanceof String){
-            return Class.forName(proxyClass.toString());
-        }
-        return (Class<?>) proxyClass;
     }
 
     private Constructor<?> getDataSourceConstructor() throws ClassNotFoundException {
@@ -57,6 +49,14 @@ public class DataSourceWrapper {
             this.xaDataSourceConstructor = declaredConstructors[0];
         }
         return this.xaDataSourceConstructor;
+    }
+
+    private Class<?> loadClass(final Class<?> iface) throws ClassNotFoundException {
+        final Object proxyClass = interfaceToClassMap.get(iface.getName());
+        if (proxyClass instanceof String) {
+            return Class.forName(proxyClass.toString());
+        }
+        return (Class<?>) proxyClass;
     }
 
     public ConnectionPoolDataSource wrapConnectionPoolDataSource(final DataSource delegate) throws Exception {

@@ -29,7 +29,7 @@ public abstract class JdbcProxy<T1> {
         return Unwrapper.isWrapperFor(iface, this, this.delegate);
     }
 
-    public final <T> T unwrap(Class<T> iface) throws SQLException {
+    public final <T2> T2 unwrap(Class<T2> iface) throws SQLException {
         return Unwrapper.unwrap(iface, this, this.delegate);
     }
 

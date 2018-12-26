@@ -60,27 +60,4 @@
     </dependencies>
 
 
-    <build>
-        <plugins>
-            <plugin>
-                <!-- Generate proxies -->
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>exec-maven-plugin</artifactId>
-                <version>1.6.0</version>
-                <executions>
-                    <execution>
-                        <phase>compile</phase>
-                        <goals>
-                            <goal>java</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <mainClass>eu.dirk.haase.jdbc.proxy.generate.JavassistProxyFactory</mainClass>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
-
-
 </project>

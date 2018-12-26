@@ -224,7 +224,7 @@ public class WeakIdentityHashMap<K, V> extends AbstractMap<K, V> implements Map<
     public Set<Map.Entry<K, V>> entrySet() {
         purge();
         if (entrySet == null) {
-            entrySet = new InnerSet(()->new HashIterator<>(entry -> entry.getKey()), (e)->containsEntry(e), (e)->removeEntry(e));
+            entrySet = new InnerSet(() -> new HashIterator<>(entry -> entry.getKey()), (e) -> containsEntry(e), (e) -> removeEntry(e));
         }
         return entrySet;
     }
@@ -309,7 +309,7 @@ public class WeakIdentityHashMap<K, V> extends AbstractMap<K, V> implements Map<
     public Set<K> keySet() {
         purge();
         if (keySet == null) {
-            keySet = new InnerSet<>(()->new HashIterator<>(entry -> entry.getKey()), (k)->containsKey(k), (k)->removeKey(k));
+            keySet = new InnerSet<>(() -> new HashIterator<>(entry -> entry.getKey()), (k) -> containsKey(k), (k) -> removeKey(k));
         }
         return keySet;
     }

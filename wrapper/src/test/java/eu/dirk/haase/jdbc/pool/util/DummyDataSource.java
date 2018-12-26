@@ -11,22 +11,13 @@ import java.sql.Statement;
 public class DummyDataSource {
 
     private final boolean singleton;
-
-    private DataSource dataSource;
     private Connection connection;
-    private Statement statement;
+    private DataSource dataSource;
     private ResultSet resultSet;
+    private Statement statement;
 
     public DummyDataSource(final boolean singleton) {
         this.singleton = singleton;
-    }
-
-    public DataSource newDataSource() {
-        if (singleton && (dataSource != null)) {
-            return dataSource;
-        }
-        Class<?>[] ifaces = {DataSource.class};
-        return dataSource = (DataSource) Proxy.newProxyInstance(DummyDataSource.class.getClassLoader(), ifaces, new DataSourceHandler());
     }
 
     public Connection newConnection() {
@@ -37,12 +28,12 @@ public class DummyDataSource {
         return connection = (Connection) Proxy.newProxyInstance(DummyDataSource.class.getClassLoader(), ifaces, new ConnectionHandler());
     }
 
-    public Statement newStatement() {
-        if (singleton && (statement != null)) {
-            return statement;
+    public DataSource newDataSource() {
+        if (singleton && (dataSource != null)) {
+            return dataSource;
         }
-        Class<?>[] ifaces = {Statement.class};
-        return statement = (Statement) Proxy.newProxyInstance(DummyDataSource.class.getClassLoader(), ifaces, new StatementHandler());
+        Class<?>[] ifaces = {DataSource.class};
+        return dataSource = (DataSource) Proxy.newProxyInstance(DummyDataSource.class.getClassLoader(), ifaces, new DataSourceHandler());
     }
 
     public ResultSet newResultSet() {
@@ -51,6 +42,25 @@ public class DummyDataSource {
         }
         Class<?>[] ifaces = {ResultSet.class};
         return resultSet = (ResultSet) Proxy.newProxyInstance(DummyDataSource.class.getClassLoader(), ifaces, new ResultSetHandler());
+    }
+
+    public Statement newStatement() {
+        if (singleton && (statement != null)) {
+            return statement;
+        }
+        Class<?>[] ifaces = {Statement.class};
+        return statement = (Statement) Proxy.newProxyInstance(DummyDataSource.class.getClassLoader(), ifaces, new StatementHandler());
+    }
+
+    class ConnectionHandler implements InvocationHandler {
+
+        @Override
+        public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+            if ("createStatement".equals(method.getName())) {
+                return newStatement();
+            }
+            return null;
+        }
     }
 
     class DataSourceHandler implements InvocationHandler {
@@ -64,13 +74,10 @@ public class DummyDataSource {
         }
     }
 
-    class ConnectionHandler implements InvocationHandler {
+    class ResultSetHandler implements InvocationHandler {
 
         @Override
         public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-            if ("createStatement".equals(method.getName())) {
-                return newStatement();
-            }
             return null;
         }
     }
@@ -88,15 +95,6 @@ public class DummyDataSource {
             if ("getGeneratedKeys".equals(method.getName())) {
                 return newResultSet();
             }
-            return null;
-        }
-    }
-
-
-    class ResultSetHandler implements InvocationHandler {
-
-        @Override
-        public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
             return null;
         }
     }
