@@ -7,7 +7,7 @@ public abstract class ConnectionProxy extends JdbcProxy<Connection> {
 
     private final DataSource dataSource;
 
-    protected ConnectionProxy(final DataSource dataSource, final Connection delegate) {
+    protected ConnectionProxy(final Connection delegate, final DataSource dataSource) {
         super(delegate);
         this.dataSource = dataSource;
     }

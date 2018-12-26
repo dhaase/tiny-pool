@@ -1,6 +1,7 @@
 package eu.dirk.haase.jdbc.proxy.common;
 
 import java.util.IdentityHashMap;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 public final class IdentityCache {
@@ -17,8 +18,8 @@ public final class IdentityCache {
         return SINGLETON;
     }
 
-    public final <T> T get(T delegate, Supplier<T> make) {
-        return (T) identityHashMap.computeIfAbsent(delegate, (k) -> make.get());
+    public final <T> T get(T delegate, Function<Object, T> objectMaker) {
+        return (T) identityHashMap.computeIfAbsent(delegate, (k) -> objectMaker.apply(delegate));
     }
 
 

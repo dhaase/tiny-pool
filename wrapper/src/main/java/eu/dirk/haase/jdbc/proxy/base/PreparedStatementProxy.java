@@ -7,7 +7,7 @@ public abstract class PreparedStatementProxy extends JdbcProxy<PreparedStatement
 
     private final Connection connection;
 
-    protected PreparedStatementProxy(Connection connection, PreparedStatement delegate) {
+    protected PreparedStatementProxy(PreparedStatement delegate, Connection connection) {
         super(delegate);
         this.connection = connection;
     }

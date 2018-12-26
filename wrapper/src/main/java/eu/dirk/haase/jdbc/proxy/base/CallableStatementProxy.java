@@ -5,13 +5,11 @@ import java.sql.Connection;
 
 public abstract class CallableStatementProxy extends JdbcProxy<CallableStatement> {
 
-    private final CallableStatement delegate;
     private final Connection connection;
 
-    protected CallableStatementProxy(Connection connection, CallableStatement delegate) {
+    protected CallableStatementProxy(CallableStatement delegate, Connection connection) {
         super(delegate);
         this.connection = connection;
-        this.delegate = delegate;
     }
 
     public final Connection getConnection() {

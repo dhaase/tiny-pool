@@ -7,7 +7,7 @@ public abstract class StatementProxy extends JdbcProxy<Statement> {
 
     private final Connection connection;
 
-    protected StatementProxy(final Connection connection, final Statement delegate) {
+    protected StatementProxy(final Statement delegate, final Connection connection) {
         super(delegate);
         this.connection = connection;
     }

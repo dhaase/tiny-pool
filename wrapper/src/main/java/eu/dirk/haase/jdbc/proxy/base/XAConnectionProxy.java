@@ -7,7 +7,7 @@ public abstract class XAConnectionProxy extends JdbcProxy<XAConnection> {
 
     private final XADataSource xaDataSource;
 
-    protected XAConnectionProxy(final XADataSource xaDataSource, final XAConnection delegate) {
+    protected XAConnectionProxy(final XAConnection delegate, final XADataSource xaDataSource) {
         super(delegate);
         this.xaDataSource = xaDataSource;
     }

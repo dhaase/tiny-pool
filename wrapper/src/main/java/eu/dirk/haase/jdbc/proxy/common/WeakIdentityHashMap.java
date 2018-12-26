@@ -721,7 +721,7 @@ public class WeakIdentityHashMap<K, V> extends AbstractMap<K, V> implements Map<
                     nextKey = null;
                     return result;
                 }
-                throw new NoSuchElementException();
+                throw new NoSuchElementException("There is no next in map with " + size() + " entries.");
             }
             throw new ConcurrentModificationException("Concurrent change occurred while moving to next entry");
         }

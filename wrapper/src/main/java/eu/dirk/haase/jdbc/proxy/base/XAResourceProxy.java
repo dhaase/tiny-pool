@@ -7,7 +7,7 @@ public class XAResourceProxy extends JdbcProxy<XAResource> {
 
     private final XAConnection xaConnection;
 
-    protected XAResourceProxy(final XAConnection xaConnection, final XAResource delegate) {
+    protected XAResourceProxy(final XAResource delegate, final XAConnection xaConnection) {
         super(delegate);
         this.xaConnection = xaConnection;
     }

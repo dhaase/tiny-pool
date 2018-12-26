@@ -7,7 +7,7 @@ public abstract class PooledConnectionProxy extends JdbcProxy<PooledConnection> 
 
     private final ConnectionPoolDataSource connectionPoolDataSource;
 
-    protected PooledConnectionProxy(final ConnectionPoolDataSource dataSource, final PooledConnection delegate) {
+    protected PooledConnectionProxy(final PooledConnection delegate, final ConnectionPoolDataSource dataSource) {
         super(delegate);
         this.connectionPoolDataSource = dataSource;
     }
