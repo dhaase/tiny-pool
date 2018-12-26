@@ -1,8 +1,8 @@
 package eu.dirk.haase.jdbc.proxy.factory;
 
-import eu.dirk.haase.jdbc.proxy.base.ConnectionPoolDataSourceHybrid;
-import eu.dirk.haase.jdbc.proxy.base.ConnectionPoolXADataSourceHybrid;
-import eu.dirk.haase.jdbc.proxy.base.XADataSourceHybrid;
+import eu.dirk.haase.jdbc.proxy.hybrid.ConnectionPoolDataSourceHybrid;
+import eu.dirk.haase.jdbc.proxy.hybrid.ConnectionPoolXADataSourceHybrid;
+import eu.dirk.haase.jdbc.proxy.hybrid.XADataSourceHybrid;
 
 import javax.sql.ConnectionPoolDataSource;
 import javax.sql.DataSource;

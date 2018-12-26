@@ -25,9 +25,9 @@ public class WrapperTest {
     @Before
     public void setUp() throws Exception {
         JavassistProxyFactory.main();
-        interfaceToClassMap.put(DataSource.class.getName(), "eu.dirk.haase.jdbc.proxy.base.WDataSourceProxy");
-        interfaceToClassMap.put(XADataSource.class.getName(), "eu.dirk.haase.jdbc.proxy.base.WXADataSourceProxy");
-        interfaceToClassMap.put(ConnectionPoolDataSource.class.getName(), "eu.dirk.haase.jdbc.proxy.base.WConnectionPoolDataSourceProxy");
+        interfaceToClassMap.put(DataSource.class.getName(), "eu.dirk.haase.jdbc.proxy.WDataSourceProxy");
+        interfaceToClassMap.put(XADataSource.class.getName(), "eu.dirk.haase.jdbc.proxy.WXADataSourceProxy");
+        interfaceToClassMap.put(ConnectionPoolDataSource.class.getName(), "eu.dirk.haase.jdbc.proxy.WConnectionPoolDataSourceProxy");
     }
 
     @Test

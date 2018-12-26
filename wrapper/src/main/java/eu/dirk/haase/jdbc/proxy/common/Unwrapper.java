@@ -17,6 +17,7 @@ public final class Unwrapper {
         return false;
     }
 
+    @SuppressWarnings("unchecked")
     public static <T> T unwrap(Class<T> iface, final Object wrapper, final Object delegate) throws SQLException {
         if (iface.isInstance(wrapper)) {
             return (T) wrapper;

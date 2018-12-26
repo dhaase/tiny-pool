@@ -1,28 +1,30 @@
-package eu.dirk.haase.jdbc.proxy.base;
+package eu.dirk.haase.jdbc.proxy.hybrid;
 
+import javax.sql.ConnectionPoolDataSource;
 import javax.sql.DataSource;
-import javax.sql.XAConnection;
-import javax.sql.XADataSource;
+import javax.sql.PooledConnection;
 import java.io.PrintWriter;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import java.util.logging.Logger;
 
-public final class XADataSourceHybrid implements XADataSource, DataSource {
+public class ConnectionPoolDataSourceHybrid implements ConnectionPoolDataSource, DataSource {
 
+    private final ConnectionPoolDataSource connectionPoolDataSource;
     private final DataSource dataSource;
-    private final XADataSource xaDataSource;
 
-    public XADataSourceHybrid(final DataSource dataSource, final XADataSource xaDataSource) {
+    public ConnectionPoolDataSourceHybrid(final DataSource dataSource, final ConnectionPoolDataSource connectionPoolDataSource) {
         this.dataSource = dataSource;
-        this.xaDataSource = xaDataSource;
+        this.connectionPoolDataSource = connectionPoolDataSource;
     }
 
+    @Override
     public Connection getConnection() throws SQLException {
         return dataSource.getConnection();
     }
 
+    @Override
     public Connection getConnection(String username, String password) throws SQLException {
         return dataSource.getConnection(username, password);
     }
@@ -53,21 +55,22 @@ public final class XADataSourceHybrid implements XADataSource, DataSource {
     }
 
     @Override
-    public XAConnection getXAConnection() throws SQLException {
-        return xaDataSource.getXAConnection();
+    public PooledConnection getPooledConnection(String user, String password) throws SQLException {
+        return connectionPoolDataSource.getPooledConnection(user, password);
     }
 
     @Override
-    public XAConnection getXAConnection(String user, String password) throws SQLException {
-        return xaDataSource.getXAConnection(user, password);
+    public PooledConnection getPooledConnection() throws SQLException {
+        return connectionPoolDataSource.getPooledConnection();
     }
 
+    @Override
     public boolean isWrapperFor(Class<?> iface) throws SQLException {
         return dataSource.isWrapperFor(iface);
     }
 
+    @Override
     public <T> T unwrap(Class<T> iface) throws SQLException {
         return dataSource.unwrap(iface);
     }
-
 }

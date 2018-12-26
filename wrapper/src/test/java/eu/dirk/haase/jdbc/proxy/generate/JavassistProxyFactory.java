@@ -1,6 +1,6 @@
 package eu.dirk.haase.jdbc.proxy.generate;
 
-import eu.dirk.haase.jdbc.proxy.base.*;
+import eu.dirk.haase.jdbc.proxy.*;
 import javassist.CannotCompileException;
 import javassist.CtClass;
 import javassist.bytecode.ClassFile;

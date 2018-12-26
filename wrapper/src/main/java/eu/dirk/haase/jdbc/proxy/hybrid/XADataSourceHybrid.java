@@ -1,28 +1,30 @@
-package eu.dirk.haase.jdbc.proxy.base;
+package eu.dirk.haase.jdbc.proxy.hybrid;
 
-import javax.sql.*;
+import javax.sql.DataSource;
+import javax.sql.XAConnection;
+import javax.sql.XADataSource;
 import java.io.PrintWriter;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import java.util.logging.Logger;
 
-public final class ConnectionPoolXADataSourceHybrid implements ConnectionPoolDataSource, XADataSource, DataSource {
+public final class XADataSourceHybrid implements XADataSource, DataSource {
 
-    private final ConnectionPoolDataSource connectionPoolDataSource;
     private final DataSource dataSource;
     private final XADataSource xaDataSource;
 
-    public ConnectionPoolXADataSourceHybrid(final ConnectionPoolDataSource connectionPoolDataSource, final DataSource dataSource, final XADataSource xaDataSource) {
+    public XADataSourceHybrid(final DataSource dataSource, final XADataSource xaDataSource) {
         this.dataSource = dataSource;
         this.xaDataSource = xaDataSource;
-        this.connectionPoolDataSource = connectionPoolDataSource;
     }
 
+    @Override
     public Connection getConnection() throws SQLException {
         return dataSource.getConnection();
     }
 
+    @Override
     public Connection getConnection(String username, String password) throws SQLException {
         return dataSource.getConnection(username, password);
     }
@@ -50,16 +52,6 @@ public final class ConnectionPoolXADataSourceHybrid implements ConnectionPoolDat
     @Override
     public Logger getParentLogger() throws SQLFeatureNotSupportedException {
         return dataSource.getParentLogger();
-    }
-
-    @Override
-    public PooledConnection getPooledConnection() throws SQLException {
-        return connectionPoolDataSource.getPooledConnection();
-    }
-
-    @Override
-    public PooledConnection getPooledConnection(String user, String password) throws SQLException {
-        return connectionPoolDataSource.getPooledConnection(user, password);
     }
 
     @Override

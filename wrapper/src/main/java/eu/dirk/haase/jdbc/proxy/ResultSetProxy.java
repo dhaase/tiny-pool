@@ -1,4 +1,6 @@
-package eu.dirk.haase.jdbc.proxy.base;
+package eu.dirk.haase.jdbc.proxy;
+
+import eu.dirk.haase.jdbc.proxy.base.JdbcProxy;
 
 import java.sql.ResultSet;
 import java.sql.Statement;
