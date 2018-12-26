@@ -7,33 +7,32 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 public class JavassistProxyClassGenerator {
 
-    private static final String prefix = "W";
-    private static final Function<String, String> CLASS_NAME_FUN = (cn) -> cn.replaceAll("(.+)\\.(\\w+)", "$1." + prefix + "$2");
     private final Function<String, String> classNameFun;
-    private final ClassPool classPool;
     private final Function<String, String> delegateMethodBody;
     private final BiFunction<String, String, String> wrapMethodBody;
+    private final Class<?> primaryIfaceClass;
+    private final Class<?> superClass;
+    private final boolean isWrapMethodConcurrent;
+
+    private ClassPool classPool;
 
 
-    public JavassistProxyClassGenerator(final ClassPool classPool) {
-        this(classPool, CLASS_NAME_FUN);
-    }
-
-
-    public JavassistProxyClassGenerator(final ClassPool classPool, final Function<String, String> classNameFun) {
-        this.classPool = classPool;
+    public JavassistProxyClassGenerator(final Function<String, String> classNameFun, final Class<?> primaryIfaceClass, final Class<?> superClass, boolean isWrapMethodConcurrent) {
         this.classNameFun = classNameFun;
         this.delegateMethodBody = (d) -> "{ try { return delegate." + d + "($$); } catch (SQLException e) { throw checkException(e); } }";
         this.wrapMethodBody = (w, d) -> "{ try { return " + w + "(delegate." + d + "($$)); } catch (SQLException e) { throw checkException(e); } }";
+        this.primaryIfaceClass = primaryIfaceClass;
+        this.superClass = superClass;
+        this.isWrapMethodConcurrent = isWrapMethodConcurrent;
     }
 
-    public <T> CtClass generate(final Class<T> primaryIfaceClass, final Class<?> superClass, final Class<?> parentIfaceClass, final Map<String, CtClass> childs, boolean isWrapMethodSynchronized) throws Exception {
+    public <T> CtClass generate(final ClassPool classPool, final Class<?> parentIfaceClass, final Map<String, CtClass> childs) throws Exception {
+        this.classPool = classPool;
+
         final String newClassName = classNameFun.apply(superClass.getName());
-        System.out.println("Generating " + newClassName);
 
         CtClass parentIfCt = null;
         final CtClass primaryIfCt = classPool.getCtClass(primaryIfaceClass.getName());
@@ -51,7 +50,7 @@ public class JavassistProxyClassGenerator {
         CtConstructor targetConstructorCt = addConstructor(targetCt, parentIfCt, primaryIfCt, field);
 
         if (childs != null) {
-            addWrapMethod(targetCt, targetConstructorCt, childs, isWrapMethodSynchronized);
+            addWrapMethod(targetCt, targetConstructorCt, childs, isWrapMethodConcurrent);
         }
 
         addAPIMethods(targetCt, primaryIfaceClass, superCt, childs);
@@ -108,10 +107,11 @@ public class JavassistProxyClassGenerator {
         return field;
     }
 
-    private void addWrapMethod(CtClass targetCt, CtConstructor targetConstructorCt, Map<String, CtClass> childs, boolean isWrapMethodSynchronized) throws NotFoundException, CannotCompileException {
+    private void addWrapMethod(CtClass targetCt, CtConstructor targetConstructorCt, Map<String, CtClass> childs, boolean isWrapMethodConcurrent) throws NotFoundException, CannotCompileException {
         final Set<String> fieldSet = new HashSet<>();
         final Set<String> methodSet = new HashSet<>();
         final CtClass factoryCt = classPool.getCtClass(Function.class.getName());
+
         for (CtClass child : childs.values()) {
             final CtClass ifaceParentCt = child.getInterfaces()[0];
             // fuege das Supplier-Field mit Initialisierung als Factory-Function hinzu:
@@ -127,7 +127,7 @@ public class JavassistProxyClassGenerator {
             final String signature = getSignature(wrapMethod);
             if (methodSet.add(signature)) {
                 wrapMethod.setModifiers(Modifier.FINAL | Modifier.PROTECTED);
-                String superWrapMethod = (isWrapMethodSynchronized ? "wrapSynchronized" : "wrap");
+                String superWrapMethod = (isWrapMethodConcurrent ? "wrapConcurrent" : "wrap");
                 String body = "";
                 body += "{ ";
                 body += " return super." + superWrapMethod + "($1, " + objectMakerFieldName + "); ";
@@ -148,7 +148,7 @@ public class JavassistProxyClassGenerator {
     }
 
     private String getSignature(CtMethod intfMethod) {
-        // Signature wird in Javassist gebildet aus:
+        // Die Signatur wird in Javassist gebildet aus:
         // den Parameter-Typen und den Rueckgabe-Typ.
         // Daher muss der Methoden-Name noch hinzugefuegt
         // werden:

@@ -3,7 +3,7 @@ package eu.dirk.haase.jdbc.proxy.base;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 
-public abstract class PreparedStatementProxy extends JdbcProxy<PreparedStatement> {
+public abstract class PreparedStatementProxy extends FactoryJdbcProxy<PreparedStatement> {
 
     private final Connection connection;
 

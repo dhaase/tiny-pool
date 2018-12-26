@@ -3,7 +3,7 @@ package eu.dirk.haase.jdbc.proxy.base;
 import javax.sql.DataSource;
 import java.sql.Connection;
 
-public abstract class ConnectionProxy extends JdbcProxy<Connection> {
+public abstract class ConnectionProxy extends FactoryJdbcProxy<Connection> {
 
     private final DataSource dataSource;
 

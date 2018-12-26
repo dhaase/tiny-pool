@@ -3,7 +3,7 @@ package eu.dirk.haase.jdbc.proxy.base;
 import javax.sql.XAConnection;
 import javax.sql.XADataSource;
 
-public abstract class XAConnectionProxy extends JdbcProxy<XAConnection> {
+public abstract class XAConnectionProxy extends ConcurrentFactoryJdbcProxy<XAConnection> {
 
     private final XADataSource xaDataSource;
 
