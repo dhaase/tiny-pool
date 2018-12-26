@@ -21,7 +21,9 @@ public class ObjectMaker implements Function<Object, Object> {
                 throw new IllegalStateException(e);
             }
         } else {
-            throw new IllegalStateException("Can not wrap twice: " + this.implClass);
+            // Ist bereits mit gleicher Klasse eingepackt.
+            // Muss daher nicht nochmal eingepackt werden:
+            return delegate;
         }
     }
 

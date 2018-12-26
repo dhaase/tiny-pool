@@ -25,8 +25,10 @@ public class JavassistProxyClasses {
     private final JavassistProxyClassGenerator xaResourceGen;
     private final JavassistProxyClassGenerator xaconnectionGen;
     private final JavassistProxyClassGenerator xadataSourceGen;
-    private CtClass cStatementCt;
+
     private ClassPool classPool;
+
+    private CtClass cStatementCt;
     private CtClass connectionCt;
     private CtClass connectionPoolDataSourceCt;
     private CtClass dataSourceCt;

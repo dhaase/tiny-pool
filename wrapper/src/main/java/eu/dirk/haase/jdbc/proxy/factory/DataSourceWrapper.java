@@ -19,36 +19,48 @@ public class DataSourceWrapper {
 
     public DataSourceWrapper(final Map<String, Object> interfaceToClassMap) throws Exception {
         this.interfaceToClassMap = interfaceToClassMap;
-        this.dataSourceConstructor = getDataSourceConstructor();
-        this.xaDataSourceConstructor = getXADataSourceConstructor();
-        this.connectionPoolDataSourceConstructor = getXADataSourceConstructor();
+        this.dataSourceConstructor = getDataSourceConstructor(null);
+        this.xaDataSourceConstructor = getXADataSourceConstructor(null);
+        this.connectionPoolDataSourceConstructor = getXADataSourceConstructor(null);
     }
 
-    private Constructor<?> getConnectionPoolDataSourceConstructor() throws ClassNotFoundException {
-        if (connectionPoolDataSourceConstructor != null) {
-            Class<?> dataSourceClass = loadClass(ConnectionPoolDataSource.class);
-            final Constructor<?>[] declaredConstructors = dataSourceClass.getDeclaredConstructors();
-            connectionPoolDataSourceConstructor = declaredConstructors[0];
+    private Constructor<?> getConnectionPoolDataSourceConstructor(Class<?> delegateClass) throws ClassNotFoundException {
+        Class<?> dataSourceClass = loadClass(ConnectionPoolDataSource.class);
+        if (dataSourceClass != delegateClass) {
+            if (connectionPoolDataSourceConstructor != null) {
+                final Constructor<?>[] declaredConstructors = dataSourceClass.getDeclaredConstructors();
+                connectionPoolDataSourceConstructor = declaredConstructors[0];
+            }
+            return connectionPoolDataSourceConstructor;
+        } else {
+            throw new IllegalStateException("Can not wrap twice: " + dataSourceClass);
         }
-        return connectionPoolDataSourceConstructor;
     }
 
-    private Constructor<?> getDataSourceConstructor() throws ClassNotFoundException {
-        if (this.dataSourceConstructor == null) {
-            Class<?> dataSourceClass = loadClass(DataSource.class);
-            final Constructor<?>[] declaredConstructors = dataSourceClass.getDeclaredConstructors();
-            this.dataSourceConstructor = declaredConstructors[0];
+    private Constructor<?> getDataSourceConstructor(Class<?> delegateClass) throws ClassNotFoundException {
+        Class<?> dataSourceClass = loadClass(DataSource.class);
+        if (dataSourceClass != delegateClass) {
+            if (this.dataSourceConstructor == null) {
+                final Constructor<?>[] declaredConstructors = dataSourceClass.getDeclaredConstructors();
+                this.dataSourceConstructor = declaredConstructors[0];
+            }
+            return this.dataSourceConstructor;
+        } else {
+            throw new IllegalStateException("Can not wrap twice: " + dataSourceClass);
         }
-        return this.dataSourceConstructor;
     }
 
-    private Constructor<?> getXADataSourceConstructor() throws ClassNotFoundException {
-        if (this.xaDataSourceConstructor == null) {
-            Class<?> dataSourceClass = loadClass(XADataSource.class);
-            final Constructor<?>[] declaredConstructors = dataSourceClass.getDeclaredConstructors();
-            this.xaDataSourceConstructor = declaredConstructors[0];
+    private Constructor<?> getXADataSourceConstructor(Class<?> delegateClass) throws ClassNotFoundException {
+        Class<?> dataSourceClass = loadClass(XADataSource.class);
+        if (dataSourceClass != delegateClass) {
+            if (this.xaDataSourceConstructor == null) {
+                final Constructor<?>[] declaredConstructors = dataSourceClass.getDeclaredConstructors();
+                this.xaDataSourceConstructor = declaredConstructors[0];
+            }
+            return this.xaDataSourceConstructor;
+        } else {
+            throw new IllegalStateException("Can not wrap twice: " + dataSourceClass);
         }
-        return this.xaDataSourceConstructor;
     }
 
     private Class<?> loadClass(final Class<?> iface) throws ClassNotFoundException {
@@ -60,7 +72,7 @@ public class DataSourceWrapper {
     }
 
     public ConnectionPoolDataSource wrapConnectionPoolDataSource(final DataSource delegate) throws Exception {
-        return (ConnectionPoolDataSource) getConnectionPoolDataSourceConstructor().newInstance(delegate);
+        return (ConnectionPoolDataSource) getConnectionPoolDataSourceConstructor(delegate.getClass()).newInstance(delegate);
     }
 
     public <T extends ConnectionPoolDataSource & DataSource> T wrapConnectionPoolDataSourceHybrid(final T delegate) throws Exception {
@@ -72,11 +84,11 @@ public class DataSourceWrapper {
     }
 
     public DataSource wrapDataSource(final DataSource delegate) throws Exception {
-        return (DataSource) getDataSourceConstructor().newInstance(delegate);
+        return (DataSource) getDataSourceConstructor(delegate.getClass()).newInstance(delegate);
     }
 
     public XADataSource wrapXADataSource(final DataSource delegate) throws Exception {
-        return (XADataSource) getXADataSourceConstructor().newInstance(delegate);
+        return (XADataSource) getXADataSourceConstructor(delegate.getClass()).newInstance(delegate);
     }
 
     public <T extends XADataSource & DataSource> T wrapXADataSourceHybrid(final T delegate) throws Exception {

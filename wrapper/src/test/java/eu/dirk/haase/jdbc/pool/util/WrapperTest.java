@@ -62,10 +62,14 @@ public class WrapperTest {
     public void test_wrapper_datasource_singleton() throws Exception {
         DummyDataSource dummyDataSource = new DummyDataSource(true);
         DataSourceWrapper dsw = new DataSourceWrapper(interfaceToClassMap);
-        DataSource dataSource = dsw.wrapDataSource(dummyDataSource.newDataSource());
-        Connection connection1 = dataSource.getConnection();
-        Connection connection2 = dataSource.getConnection();
-        assertThat(connection1).isSameAs(connection2);
+        DataSource dataSource_a = dsw.wrapDataSource(dummyDataSource.newDataSource());
+        Connection connection1_a = dataSource_a.getConnection();
+        Connection connection2_a = dataSource_a.getConnection();
+        assertThat(connection1_a).isSameAs(connection2_a);
+//        DataSource dataSource_b = dsw.wrapDataSource(dataSource_a);
+//        Connection connection1_b = dataSource_b.getConnection();
+//        Connection connection2_b = dataSource_b.getConnection();
+//        assertThat(connection1_b).isSameAs(connection2_b);
     }
 
 }
