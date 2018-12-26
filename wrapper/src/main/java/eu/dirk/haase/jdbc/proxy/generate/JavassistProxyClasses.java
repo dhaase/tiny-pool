@@ -13,12 +13,13 @@ import java.io.IOException;
 import java.sql.*;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 public class JavassistProxyClasses {
 
     private static final String prefix = "W";
-    private static final Function<String, String> CLASS_NAME_FUN = (cn) -> cn.replaceAll("(.+)\\.(\\w+)", "$1." + prefix + "$2");
+    private static final BiFunction<String, Class<?>, String> CLASS_NAME_FUN = (cn,iface) -> cn.replaceAll("(.+)\\.(\\w+)", "$1." + prefix + "$2");
 
     private ClassPool classPool;
 
@@ -50,7 +51,7 @@ public class JavassistProxyClasses {
         this(CLASS_NAME_FUN);
     }
 
-    public JavassistProxyClasses(final Function<String, String> classNameFun) {
+    public JavassistProxyClasses(final BiFunction<String, Class<?>, String> classNameFun) {
         this.resultSetGen = new JavassistProxyClassGenerator(classNameFun, ResultSet.class, ResultSetProxy.class, false);
         this.connectionGen = new JavassistProxyClassGenerator(classNameFun, Connection.class, ConnectionProxy.class, false);
 

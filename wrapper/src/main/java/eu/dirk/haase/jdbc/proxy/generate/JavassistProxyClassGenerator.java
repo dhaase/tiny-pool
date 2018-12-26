@@ -10,7 +10,6 @@ import java.util.function.Function;
 
 public class JavassistProxyClassGenerator {
 
-    private final Function<String, String> classNameFun;
     private final Function<String, String> delegateMethodBody;
     private final BiFunction<String, String, String> wrapMethodBody;
     private final Class<?> primaryIfaceClass;
@@ -18,11 +17,12 @@ public class JavassistProxyClassGenerator {
     private final boolean isWrapMethodConcurrent;
     private final Set<String> allMethodSet = new HashSet<>();
     private final Set<String> allFieldSet = new HashSet<>();
+    private final String newClassName;
 
     private ClassPool classPool;
 
-    public JavassistProxyClassGenerator(final Function<String, String> classNameFun, final Class<?> primaryIfaceClass, final Class<?> superClass, boolean isWrapMethodConcurrent) {
-        this.classNameFun = classNameFun;
+    public JavassistProxyClassGenerator(final BiFunction<String, Class<?>, String> classNameFun, final Class<?> primaryIfaceClass, final Class<?> superClass, boolean isWrapMethodConcurrent) {
+        this.newClassName = classNameFun.apply(superClass.getName(), primaryIfaceClass);
         this.delegateMethodBody = (d) -> "{ try { return delegate." + d + "($$); } catch (SQLException e) { throw checkException(e); } }";
         this.wrapMethodBody = (w, d) -> "{ try { return " + w + "(delegate." + d + "($$)); } catch (SQLException e) { throw checkException(e); } }";
         this.primaryIfaceClass = primaryIfaceClass;
@@ -32,7 +32,6 @@ public class JavassistProxyClassGenerator {
 
     public <T> CtClass generate(final ClassPool classPool, final Class<?> parentIfaceClass, final Map<String, CtClass> childs) throws Exception {
         this.classPool = classPool;
-        final String newClassName = classNameFun.apply(superClass.getName());
         final CtClass superCt = classPool.getCtClass(superClass.getName());
         final CtClass targetCt = classPool.makeClass(newClassName, superCt);
         targetCt.setModifiers(Modifier.FINAL | Modifier.PUBLIC);
