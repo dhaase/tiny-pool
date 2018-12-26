@@ -34,18 +34,21 @@ public abstract class ConcurrentFactoryJdbcProxy<T1> extends FactoryJdbcProxy<T1
 
     protected ConcurrentFactoryJdbcProxy(T1 delegate) {
         super(delegate);
-        this.lock = new ReentrantLock();
+        this.lock = new ReentrantLock(true);
     }
 
     protected final <T2> T2 wrapConcurrent(T2 delegate, Function<T2, T2> objectMaker) {
         try {
             if (this.lock.tryLock(WAITING_SECONDS, TimeUnit.SECONDS)) {
                 return wrap(delegate, objectMaker);
+            } else {
+                throw new IllegalStateException("Waiting time of " + WAITING_SECONDS + " sec is elapsed before the lock was acquired in class " + getClass());
             }
         } catch (InterruptedException e) {
             throw new IllegalStateException("Interrupted while acquiring the lock in class " + getClass(), e);
+        } finally {
+            this.lock.unlock();
         }
-        throw new IllegalStateException("Waiting time of " + WAITING_SECONDS + " sec is elapsed before the lock was acquired in class " + getClass());
     }
 
 }
