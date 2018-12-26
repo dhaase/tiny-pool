@@ -32,16 +32,17 @@ public class JavassistProxyClassGenerator {
 
     public <T> CtClass generate(final ClassPool classPool, final Class<?> parentIfaceClass, final Map<String, CtClass> childs) throws Exception {
         this.classPool = classPool;
+
+        final CtClass parentIfCt = (parentIfaceClass != null ? classPool.getCtClass(parentIfaceClass.getName()) : null);
         final CtClass superCt = classPool.getCtClass(superClass.getName());
         final CtClass targetCt = classPool.makeClass(newClassName, superCt);
         targetCt.setModifiers(Modifier.FINAL | Modifier.PUBLIC);
 
-        CtClass parentIfCt = (parentIfaceClass != null ? classPool.getCtClass(parentIfaceClass.getName()) : null);
-
         final CtClass primaryIfCt = classPool.getCtClass(primaryIfaceClass.getName());
         targetCt.addInterface(primaryIfCt);
+
         final CtField field = addField(targetCt, primaryIfCt, "delegate");
-        CtConstructor targetConstructorCt = addConstructor(targetCt, parentIfCt, primaryIfCt, field);
+        final CtConstructor targetConstructorCt = addConstructor(targetCt, parentIfCt, primaryIfCt, field);
         if (childs != null) {
             addWrapMethod(targetCt, targetConstructorCt, childs, isWrapMethodConcurrent);
         }

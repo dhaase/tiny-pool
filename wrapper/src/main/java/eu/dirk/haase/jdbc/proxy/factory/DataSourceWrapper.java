@@ -1,23 +1,24 @@
-package eu.dirk.haase.jdbc.proxy.base;
+package eu.dirk.haase.jdbc.proxy.factory;
+
+import eu.dirk.haase.jdbc.proxy.base.*;
 
 import javax.sql.ConnectionPoolDataSource;
 import javax.sql.DataSource;
 import javax.sql.XADataSource;
 import java.lang.reflect.Constructor;
+import java.util.Map;
 import java.util.function.BiFunction;
 
 public class DataSourceWrapper {
 
-    private static final String prefix = "W";
-    private static final BiFunction<String, Class<?>, String> CLASS_NAME_FUN = (cn, iface) -> cn.replaceAll("(.+)\\.(\\w+)", "$1." + prefix + "$2");
-
-    private final BiFunction<String, Class<?>, String> classNameFun;
     private Constructor<?> connectionPoolDataSourceConstructor;
     private Constructor<?> dataSourceConstructor;
     private Constructor<?> xaDataSourceConstructor;
 
-    public DataSourceWrapper() throws Exception {
-        this.classNameFun = CLASS_NAME_FUN;
+    private final Map<String, String> interfaceToClassMap;
+
+    public DataSourceWrapper(final Map<String, String> interfaceToClassMap) throws Exception {
+        this.interfaceToClassMap = interfaceToClassMap;
         this.dataSourceConstructor = getDataSourceConstructor();
         this.xaDataSourceConstructor = getXADataSourceConstructor();
         this.connectionPoolDataSourceConstructor = getXADataSourceConstructor();
@@ -25,18 +26,21 @@ public class DataSourceWrapper {
 
     private Constructor<?> getConnectionPoolDataSourceConstructor() throws ClassNotFoundException {
         if (connectionPoolDataSourceConstructor != null) {
-            final String newClassName = classNameFun.apply(DataSourceProxy.class.getName(), ConnectionPoolDataSource.class);
-            Class<?> dataSourceClass = Class.forName(newClassName);
+            Class<?> dataSourceClass = loadClass(ConnectionPoolDataSource.class);
             final Constructor<?>[] declaredConstructors = dataSourceClass.getDeclaredConstructors();
             connectionPoolDataSourceConstructor = declaredConstructors[0];
         }
         return connectionPoolDataSourceConstructor;
     }
 
+    private Class<?> loadClass(final Class<?> iface) throws ClassNotFoundException {
+        final String className = interfaceToClassMap.get(iface.getName());
+        return Class.forName(className);
+    }
+
     private Constructor<?> getDataSourceConstructor() throws ClassNotFoundException {
         if (this.dataSourceConstructor == null) {
-            final String newClassName = classNameFun.apply(DataSourceProxy.class.getName(), DataSource.class);
-            Class<?> dataSourceClass = Class.forName(newClassName);
+            Class<?> dataSourceClass = loadClass(DataSource.class);
             final Constructor<?>[] declaredConstructors = dataSourceClass.getDeclaredConstructors();
             this.dataSourceConstructor = declaredConstructors[0];
         }
@@ -45,8 +49,7 @@ public class DataSourceWrapper {
 
     private Constructor<?> getXADataSourceConstructor() throws ClassNotFoundException {
         if (this.xaDataSourceConstructor == null) {
-            final String newClassName = classNameFun.apply(DataSourceProxy.class.getName(), XADataSource.class);
-            Class<?> dataSourceClass = Class.forName(newClassName);
+            Class<?> dataSourceClass = loadClass(XADataSource.class);
             final Constructor<?>[] declaredConstructors = dataSourceClass.getDeclaredConstructors();
             this.xaDataSourceConstructor = declaredConstructors[0];
         }
