@@ -97,7 +97,7 @@ public class JavassistProxyClassGenerator {
             CtMethod wrapMethod = new CtMethod(ifaceParentCt, wrapMethodName, wrapParameter, targetCt);
             final String signature = getSignature(wrapMethod);
             if (allMethodSet.add(signature)) {
-                wrapMethod.setModifiers(Modifier.FINAL | Modifier.PROTECTED);
+                wrapMethod.setModifiers(Modifier.FINAL | Modifier.PROTECTED | Modifier.VARARGS);
                 String superWrapMethod = (isWrapMethodConcurrent ? "wrapConcurrent" : "wrap");
                 String body = "";
                 body += "{ ";

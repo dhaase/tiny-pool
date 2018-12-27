@@ -5,7 +5,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 
 public class ObjectMaker implements BiFunction<Object, Object[], Object> {
 

@@ -9,7 +9,6 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.Statement;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 
 /**
  * Basis-Klasse f&uuml;r JDBC-Klassen die eingepackt werden sollen und
@@ -39,7 +38,7 @@ public abstract class FactoryJdbcProxy<T1> extends JdbcProxy<T1> {
         this.identityCache = new IdentityCache();
     }
 
-    protected final <T2> T2 wrap(T2 delegate, BiFunction<T2, Object[], T2> objectMaker, final Object[] argumentArray) {
+    protected final <T2> T2 wrap(T2 delegate, BiFunction<T2, Object[], T2> objectMaker, final Object... argumentArray) {
         return this.identityCache.get(delegate, objectMaker, argumentArray);
     }
 

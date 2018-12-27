@@ -7,7 +7,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 
 /**
  * Basis-Klasse f&uuml;r JDBC-Klassen die eingepackt werden sollen und
@@ -38,7 +37,7 @@ public abstract class ConcurrentFactoryJdbcProxy<T1> extends FactoryJdbcProxy<T1
         this.lock = new ReentrantLock(true);
     }
 
-    protected final <T2> T2 wrapConcurrent(T2 delegate, BiFunction<T2, Object[], T2> objectMaker, final Object[] argumentArray) {
+    protected final <T2> T2 wrapConcurrent(T2 delegate, BiFunction<T2, Object[], T2> objectMaker, final Object... argumentArray) {
         try {
             if (this.lock.tryLock(WAITING_SECONDS, TimeUnit.SECONDS)) {
                 return wrap(delegate, objectMaker, argumentArray);
