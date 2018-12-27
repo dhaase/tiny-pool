@@ -1,21 +1,30 @@
 package eu.dirk.haase.jdbc.proxy;
 
+import eu.dirk.haase.jdbc.proxy.base.CloseState;
 import eu.dirk.haase.jdbc.proxy.base.FactoryJdbcProxy;
 
 import java.sql.CallableStatement;
 import java.sql.Connection;
+import java.sql.SQLException;
 
-public abstract class CallableStatementProxy extends FactoryJdbcProxy<CallableStatement> {
+public abstract class CallableStatementProxy extends FactoryJdbcProxy<CallableStatement> implements CloseState {
 
     private final Connection connection;
+    private final CallableStatement delegate;
 
     protected CallableStatementProxy(CallableStatement delegate, Connection connection) {
         super(delegate);
         this.connection = connection;
+        this.delegate = delegate;
     }
 
     public final Connection getConnection() {
         return connection;
+    }
+
+    @Override
+    public final boolean isClosed() throws SQLException {
+        return delegate.isClosed();
     }
 
 }

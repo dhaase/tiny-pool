@@ -45,6 +45,7 @@ public abstract class ConcurrentFactoryJdbcProxy<T1> extends FactoryJdbcProxy<T1
                 throw new IllegalStateException("Waiting time of " + WAITING_SECONDS + " sec is elapsed before the lock was acquired in class " + getClass());
             }
         } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
             throw new IllegalStateException("Interrupted while acquiring the lock in class " + getClass(), e);
         } finally {
             this.lock.unlock();

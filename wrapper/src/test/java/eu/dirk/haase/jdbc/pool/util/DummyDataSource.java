@@ -59,6 +59,12 @@ public class DummyDataSource {
             if ("createStatement".equals(method.getName())) {
                 return newStatement();
             }
+            if ("isClosed".equals(method.getName())) {
+                return false;
+            }
+            if ("toString".equals(method.getName())) {
+                return "Proxy-Connection: " + this;
+            }
             return null;
         }
     }
@@ -70,6 +76,9 @@ public class DummyDataSource {
             if ("getConnection".equals(method.getName())) {
                 return newConnection();
             }
+            if ("toString".equals(method.getName())) {
+                return "Proxy-DataSource: " + this;
+            }
             return null;
         }
     }
@@ -78,6 +87,12 @@ public class DummyDataSource {
 
         @Override
         public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+            if ("isClosed".equals(method.getName())) {
+                return false;
+            }
+            if ("toString".equals(method.getName())) {
+                return "Proxy-ResultSet: " + this;
+            }
             return null;
         }
     }
@@ -94,6 +109,12 @@ public class DummyDataSource {
             }
             if ("getGeneratedKeys".equals(method.getName())) {
                 return newResultSet();
+            }
+            if ("isClosed".equals(method.getName())) {
+                return false;
+            }
+            if ("toString".equals(method.getName())) {
+                return "Proxy-Statement: " + this;
             }
             return null;
         }
