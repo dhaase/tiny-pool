@@ -9,7 +9,7 @@ public abstract class PooledConnectionProxy extends ConcurrentFactoryJdbcProxy<P
 
     private final ConnectionPoolDataSource connectionPoolDataSource;
 
-    protected PooledConnectionProxy(final PooledConnection delegate, final ConnectionPoolDataSource dataSource) {
+    protected PooledConnectionProxy(final PooledConnection delegate, final ConnectionPoolDataSource dataSource, final Object[] argumentArray) {
         super(delegate);
         this.connectionPoolDataSource = dataSource;
     }

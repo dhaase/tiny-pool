@@ -66,7 +66,7 @@ public class DataSourceWrapper {
     private Class<?> loadClass(final Class<?> iface) throws ClassNotFoundException {
         final Object proxyClass = interfaceToClassMap.get(iface.getName());
         if (proxyClass instanceof String) {
-            return Class.forName(proxyClass.toString());
+            return Class.forName((String) proxyClass);
         }
         return (Class<?>) proxyClass;
     }

@@ -12,7 +12,7 @@ public abstract class ConnectionProxy extends FactoryJdbcProxy<Connection> imple
     private final DataSource dataSource;
     private final Connection delegate;
 
-    protected ConnectionProxy(final Connection delegate, final DataSource dataSource) {
+    protected ConnectionProxy(final Connection delegate, final DataSource dataSource, final Object[] argumentArray) {
         super(delegate);
         this.dataSource = dataSource;
         this.delegate = delegate;

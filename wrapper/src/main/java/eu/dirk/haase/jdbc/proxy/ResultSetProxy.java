@@ -12,7 +12,7 @@ public abstract class ResultSetProxy extends JdbcProxy<ResultSet> implements Clo
     private final ResultSet delegate;
     private final Statement statement;
 
-    protected ResultSetProxy(final ResultSet delegate, final Statement statement) {
+    protected ResultSetProxy(final ResultSet delegate, final Statement statement, final Object[] argumentArray) {
         super(delegate);
         this.statement = statement;
         this.delegate = delegate;

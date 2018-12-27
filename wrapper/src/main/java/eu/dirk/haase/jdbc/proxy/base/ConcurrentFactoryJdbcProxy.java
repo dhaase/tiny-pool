@@ -6,6 +6,7 @@ import java.sql.Connection;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 /**
@@ -29,7 +30,7 @@ import java.util.function.Function;
  */
 public abstract class ConcurrentFactoryJdbcProxy<T1> extends FactoryJdbcProxy<T1> {
 
-    private static final int WAITING_SECONDS = 10;
+    private static final int WAITING_SECONDS = 30;
     private final Lock lock;
 
     protected ConcurrentFactoryJdbcProxy(T1 delegate) {
@@ -37,12 +38,12 @@ public abstract class ConcurrentFactoryJdbcProxy<T1> extends FactoryJdbcProxy<T1
         this.lock = new ReentrantLock(true);
     }
 
-    protected final <T2> T2 wrapConcurrent(T2 delegate, Function<T2, T2> objectMaker) {
+    protected final <T2> T2 wrapConcurrent(T2 delegate, BiFunction<T2, Object[], T2> objectMaker, final Object[] argumentArray) {
         try {
             if (this.lock.tryLock(WAITING_SECONDS, TimeUnit.SECONDS)) {
-                return wrap(delegate, objectMaker);
+                return wrap(delegate, objectMaker, argumentArray);
             } else {
-                throw new IllegalStateException("Waiting time of " + WAITING_SECONDS + " sec is elapsed before the lock was acquired in class " + getClass());
+                throw new IllegalStateException("Waiting time of " + WAITING_SECONDS + " seconds is elapsed before the lock was acquired in class " + getClass());
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();

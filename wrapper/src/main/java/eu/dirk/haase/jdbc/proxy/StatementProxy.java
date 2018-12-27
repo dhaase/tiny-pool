@@ -12,7 +12,7 @@ public abstract class StatementProxy extends FactoryJdbcProxy<Statement> impleme
     private final Connection connection;
     private final Statement delegate;
 
-    protected StatementProxy(final Statement delegate, final Connection connection) {
+    protected StatementProxy(final Statement delegate, final Connection connection, final Object[] argumentArray) {
         super(delegate);
         this.connection = connection;
         this.delegate = delegate;

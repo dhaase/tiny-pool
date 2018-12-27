@@ -9,7 +9,7 @@ public class XAResourceProxy extends ConcurrentFactoryJdbcProxy<XAResource> {
 
     private final XAConnection xaConnection;
 
-    protected XAResourceProxy(final XAResource delegate, final XAConnection xaConnection) {
+    protected XAResourceProxy(final XAResource delegate, final XAConnection xaConnection, final Object[] argumentArray) {
         super(delegate);
         this.xaConnection = xaConnection;
     }

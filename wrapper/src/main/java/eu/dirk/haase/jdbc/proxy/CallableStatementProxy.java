@@ -12,7 +12,7 @@ public abstract class CallableStatementProxy extends FactoryJdbcProxy<CallableSt
     private final Connection connection;
     private final CallableStatement delegate;
 
-    protected CallableStatementProxy(CallableStatement delegate, Connection connection) {
+    protected CallableStatementProxy(CallableStatement delegate, Connection connection, final Object[] argumentArray) {
         super(delegate);
         this.connection = connection;
         this.delegate = delegate;

@@ -8,6 +8,7 @@ import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.Statement;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 /**
@@ -38,8 +39,8 @@ public abstract class FactoryJdbcProxy<T1> extends JdbcProxy<T1> {
         this.identityCache = new IdentityCache();
     }
 
-    protected final <T2> T2 wrap(T2 delegate, Function<T2, T2> objectMaker) {
-        return this.identityCache.get(delegate, objectMaker);
+    protected final <T2> T2 wrap(T2 delegate, BiFunction<T2, Object[], T2> objectMaker, final Object[] argumentArray) {
+        return this.identityCache.get(delegate, objectMaker, argumentArray);
     }
 
 }

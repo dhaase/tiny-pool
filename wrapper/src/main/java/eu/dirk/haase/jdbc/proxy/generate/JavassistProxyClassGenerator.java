@@ -23,7 +23,7 @@ public class JavassistProxyClassGenerator {
     public JavassistProxyClassGenerator(final BiFunction<String, Class<?>, String> classNameFun, final Class<?> primaryIfaceClass, final Class<?> superClass, boolean isWrapMethodConcurrent) {
         this.newClassName = classNameFun.apply(superClass.getName(), primaryIfaceClass);
         this.delegateMethodBody = (d) -> "{ try { return delegate." + d + "($$); } catch (SQLException e) { throw checkException(e); } }";
-        this.wrapMethodBody = (w, d) -> "{ try { return " + w + "(delegate." + d + "($$)); } catch (SQLException e) { throw checkException(e); } }";
+        this.wrapMethodBody = (w, d) -> "{ try { return " + w + "(delegate." + d + "($$), $args); } catch (SQLException e) { throw checkException(e); } }";
         this.primaryIfaceClass = primaryIfaceClass;
         this.superClass = superClass;
         this.isWrapMethodConcurrent = isWrapMethodConcurrent;
@@ -50,14 +50,15 @@ public class JavassistProxyClassGenerator {
         }
     }
 
-    private CtConstructor addConstructor(final CtClass targetCt, final CtClass parentIfCt, final CtClass primaryIfCt, final CtField field) throws CannotCompileException {
+    private CtConstructor addConstructor(final CtClass targetCt, final CtClass parentIfCt, final CtClass primaryIfCt, final CtField field) throws CannotCompileException, NotFoundException {
         CtClass[] parameter;
         String methodBody;
         if (parentIfCt != null) {
-            parameter = new CtClass[2];
+            parameter = new CtClass[3];
             parameter[0] = primaryIfCt;
             parameter[1] = parentIfCt;
-            methodBody = "{ super($1, $2); this." + field.getName() + " = $2; }";
+            parameter[2] = classPool.getCtClass(Object[].class.getName());
+            methodBody = "{ super($1, $2, $3); this." + field.getName() + " = $2; }";
         } else {
             parameter = new CtClass[1];
             parameter[0] = primaryIfCt;
@@ -82,25 +83,25 @@ public class JavassistProxyClassGenerator {
     }
 
     private void addWrapMethod(CtClass targetCt, CtConstructor targetConstructorCt, Map<String, CtClass> childs, boolean isWrapMethodConcurrent) throws NotFoundException, CannotCompileException {
-        final CtClass factoryCt = classPool.getCtClass(Function.class.getName());
+        final CtClass factoryCt = classPool.getCtClass(BiFunction.class.getName());
 
         for (CtClass child : childs.values()) {
             final CtClass ifaceParentCt = child.getInterfaces()[0];
-            // fuege das Supplier-Field mit Initialisierung als Factory-Function hinzu:
+            // fuege das BiFunction-Field mit Initialisierung als Factory-Function hinzu:
             final String objectMakerFieldName = "new" + ifaceParentCt.getSimpleName();
             addField(targetCt, factoryCt, objectMakerFieldName);
             targetConstructorCt.insertAfter(objectMakerFieldName + " = new ObjectMaker(" + child.getName() + ".class, $1);");
             // fuege die Wrap-Methode hinzu:
-            CtClass[] parameter = {ifaceParentCt};
+            CtClass[] wrapParameter = {ifaceParentCt, classPool.getCtClass(Object[].class.getName())};
             final String wrapMethodName = "wrap" + ifaceParentCt.getSimpleName();
-            CtMethod wrapMethod = new CtMethod(ifaceParentCt, wrapMethodName, parameter, targetCt);
+            CtMethod wrapMethod = new CtMethod(ifaceParentCt, wrapMethodName, wrapParameter, targetCt);
             final String signature = getSignature(wrapMethod);
             if (allMethodSet.add(signature)) {
                 wrapMethod.setModifiers(Modifier.FINAL | Modifier.PROTECTED);
                 String superWrapMethod = (isWrapMethodConcurrent ? "wrapConcurrent" : "wrap");
                 String body = "";
                 body += "{ ";
-                body += " return super." + superWrapMethod + "($1, " + objectMakerFieldName + "); ";
+                body += " return super." + superWrapMethod + "($1, " + objectMakerFieldName + ", $2); ";
                 body += "}";
                 wrapMethod.setBody(body);
                 targetCt.addMethod(wrapMethod);

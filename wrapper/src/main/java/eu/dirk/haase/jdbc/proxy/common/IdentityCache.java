@@ -20,8 +20,8 @@ public final class IdentityCache implements Function<Object, Object> {
         return null;
     }
 
-    public final <T> T get(T delegate, Function<T, T> objectMaker) {
-        return (T) identityHashMap.computeIfAbsent(delegate, (k) -> objectMaker.apply(delegate));
+    public final <T> T get(T delegate, BiFunction<T, Object[], T> objectMaker, final Object[] argumentArray) {
+        return (T) identityHashMap.computeIfAbsent(delegate, (k) -> objectMaker.apply(delegate, argumentArray));
     }
 
 }

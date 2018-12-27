@@ -4,9 +4,10 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
-public class ObjectMaker implements Function<Object, Object> {
+public class ObjectMaker implements BiFunction<Object, Object[], Object> {
 
     private final Class<?> implClass;
     private final Object parentObject;
@@ -17,13 +18,13 @@ public class ObjectMaker implements Function<Object, Object> {
     }
 
     @Override
-    public Object apply(Object delegate) {
+    public Object apply(Object delegate, final Object[] argumentArray) {
         if (implClass != delegate.getClass()) {
             try {
                 if (isClosed(delegate)) {
                     throw new IllegalStateException("Instance is already closed: " + delegate.getClass());
                 }
-                return implClass.getDeclaredConstructors()[0].newInstance(delegate, parentObject);
+                return implClass.getDeclaredConstructors()[0].newInstance(delegate, parentObject, argumentArray);
             } catch (RuntimeException re) {
                 throw re;
             } catch (Exception e) {
