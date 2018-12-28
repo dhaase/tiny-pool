@@ -104,8 +104,8 @@ public class DataSourceWrapper {
 
     /**
      * Factory f&uuml;r den Sonderfall das ein und dieselbe DataSource-Instanz
-     * gleichzeitig mehrere Interfaces {@link XADataSource}, {@link ConnectionPoolDataSource} und {@link DataSource}
-     * implementieren.
+     * gleichzeitig mehrere Interfaces {@link DataSource} und {@link XADataSource}
+     * oder {@link ConnectionPoolDataSource} implementiert.
      *
      * @see ConnectionPoolDataSourceHybrid
      * @see ConnectionPoolXADataSourceHybrid
