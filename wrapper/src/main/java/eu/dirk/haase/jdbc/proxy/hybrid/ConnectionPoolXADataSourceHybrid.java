@@ -31,7 +31,7 @@ import java.util.logging.Logger;
  * @see XADataSource
  * @see DataSource
  */
-public final class ConnectionPoolXADataSourceHybrid extends AbstractHybrid implements ConnectionPoolDataSource, XADataSource, DataSource {
+public final class ConnectionPoolXADataSourceHybrid extends AbstractDataSourceHybrid implements ConnectionPoolDataSource, XADataSource, DataSource {
 
     private final ConnectionPoolDataSource connectionPoolDataSourceProxy;
     private final DataSource dataSourceProxy;

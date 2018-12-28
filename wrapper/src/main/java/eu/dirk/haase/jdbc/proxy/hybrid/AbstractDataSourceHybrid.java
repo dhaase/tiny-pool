@@ -2,10 +2,10 @@ package eu.dirk.haase.jdbc.proxy.hybrid;
 
 import javax.sql.DataSource;
 
-abstract class AbstractHybrid {
+abstract class AbstractDataSourceHybrid {
     private final DataSource dataSourceProxy;
 
-    AbstractHybrid(final DataSource dataSourceProxy) {
+    AbstractDataSourceHybrid(final DataSource dataSourceProxy) {
         this.dataSourceProxy = dataSourceProxy;
     }
 
@@ -14,7 +14,7 @@ abstract class AbstractHybrid {
         if (this == thatObj) return true;
         if (thatObj.getClass() != this.getClass()) return false;
 
-        AbstractHybrid that = (AbstractHybrid) thatObj;
+        AbstractDataSourceHybrid that = (AbstractDataSourceHybrid) thatObj;
 
         return dataSourceProxy != null ? dataSourceProxy.equals(that.dataSourceProxy) : that.dataSourceProxy == null;
     }

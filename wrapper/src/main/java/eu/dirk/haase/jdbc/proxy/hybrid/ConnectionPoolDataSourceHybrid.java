@@ -33,7 +33,7 @@ import java.util.logging.Logger;
  * @see ConnectionPoolDataSource
  * @see DataSource
  */
-public final class ConnectionPoolDataSourceHybrid extends AbstractHybrid implements ConnectionPoolDataSource, DataSource {
+public final class ConnectionPoolDataSourceHybrid extends AbstractDataSourceHybrid implements ConnectionPoolDataSource, DataSource {
 
     private final ConnectionPoolDataSource connectionPoolDataSourceProxy;
     private final DataSource dataSourceProxy;

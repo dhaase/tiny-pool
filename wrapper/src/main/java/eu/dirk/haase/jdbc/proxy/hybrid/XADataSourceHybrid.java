@@ -31,7 +31,7 @@ import java.util.logging.Logger;
  * @see XADataSource
  * @see DataSourceWrapper.Hybrid
  */
-public final class XADataSourceHybrid extends AbstractHybrid implements XADataSource, DataSource {
+public final class XADataSourceHybrid extends AbstractDataSourceHybrid implements XADataSource, DataSource {
 
     private final DataSource dataSourceProxy;
     private final XADataSource xaDataSourceProxy;
