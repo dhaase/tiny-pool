@@ -17,20 +17,41 @@ public abstract class JdbcProxy<T1> {
         this.delegate = delegate;
     }
 
-    protected final SQLException checkException(SQLException e) {
+    protected SQLException checkException(SQLException e) {
         return e;
+    }
+
+    @Override
+    public boolean equals(Object thatObj) {
+        if (this == thatObj) return true;
+        if (!(thatObj instanceof JdbcProxy)) return false;
+
+        JdbcProxy<?> that = (JdbcProxy<?>) thatObj;
+
+        return this.delegate != null ? this.delegate.equals(that.delegate) : that.delegate == null;
     }
 
     public final T1 getDelegate() {
         return delegate;
     }
 
+    @Override
+    public int hashCode() {
+        return delegate != null ? delegate.hashCode() : 0;
+    }
+
     public final boolean isWrapperFor(Class<?> iface) throws SQLException {
         return Unwrapper.isWrapperFor(iface, this, this.delegate);
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "{" +
+                "delegate=" + delegate +
+                '}';
     }
 
     public final <T2> T2 unwrap(Class<T2> iface) throws SQLException {
         return Unwrapper.unwrap(iface, this, this.delegate);
     }
-
 }
