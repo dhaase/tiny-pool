@@ -20,14 +20,14 @@ import static org.assertj.core.api.Java6Assertions.assertThat;
 @RunWith(BlockJUnit4ClassRunner.class)
 public class WrapperTest {
 
-    private final Map<String, Object> interfaceToClassMap = new HashMap<>();
+    private final Map<Class<?>, Object> interfaceToClassMap = new HashMap<>();
 
     @Before
     public void setUp() throws Exception {
         JavassistProxyFactory.main();
-        interfaceToClassMap.put(DataSource.class.getName(), "eu.dirk.haase.jdbc.proxy.WDataSourceProxy");
-        interfaceToClassMap.put(XADataSource.class.getName(), "eu.dirk.haase.jdbc.proxy.WXADataSourceProxy");
-        interfaceToClassMap.put(ConnectionPoolDataSource.class.getName(), "eu.dirk.haase.jdbc.proxy.WConnectionPoolDataSourceProxy");
+        interfaceToClassMap.put(DataSource.class, "eu.dirk.haase.jdbc.proxy.WDataSourceProxy");
+        interfaceToClassMap.put(XADataSource.class, "eu.dirk.haase.jdbc.proxy.WXADataSourceProxy");
+        interfaceToClassMap.put(ConnectionPoolDataSource.class, "eu.dirk.haase.jdbc.proxy.WConnectionPoolDataSourceProxy");
     }
 
     @Test
