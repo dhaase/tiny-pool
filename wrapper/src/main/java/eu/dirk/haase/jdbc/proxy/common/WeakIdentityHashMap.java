@@ -93,11 +93,11 @@ public class WeakIdentityHashMap<K, V> extends AbstractMap<K, V> implements Map<
     }
 
     private static boolean equalsKey(boolean isEqualityByIdentity, Object thisKey, Object thatKey) {
-        boolean isEqual = (thisKey == thatKey);
-        if (!isEqual && !isEqualityByIdentity) {
-            isEqual = (thisKey != null ? thisKey.equals(thatKey) : thisKey == thatKey);
+        if (isEqualityByIdentity) {
+            return (thisKey == thatKey);
+        } else {
+            return (thisKey == null ? thatKey == null : thisKey.equals(thatKey));
         }
-        return isEqual;
     }
 
     private static int keyHash(boolean isEqualityByIdentity, Object thisKey) {
@@ -504,14 +504,13 @@ public class WeakIdentityHashMap<K, V> extends AbstractMap<K, V> implements Map<
 
     private interface Entry<K, V> extends Map.Entry<K, V> {
 
-        default boolean equalsEntry(Object other) {
-            if (!(other instanceof Map.Entry)) {
+        default boolean equalsEntry(Object thatObj) {
+            if (!(thatObj instanceof WeakIdentityHashMap.Entry)) {
                 return false;
             }
-            Map.Entry<?, ?> entry = (Map.Entry<?, ?>) other;
-            Object key = this.getKey();
-            return (equalsKey(isEqualityByIdentity(), key, entry.getKey()))
-                    && (this.getValue() == null ? this.getValue() == entry.getValue() : this.getValue().equals(entry.getValue()));
+            final Map.Entry<?, ?> that = (WeakIdentityHashMap.Entry<?, ?>) thatObj;
+            return (equalsKey(this.isEqualityByIdentity(), this.getKey(), that.getKey()))
+                    && (this.getValue() == null ? that.getValue() == null : this.getValue().equals(that.getValue()));
         }
 
         Entry<K, V> getNext();
@@ -587,15 +586,15 @@ public class WeakIdentityHashMap<K, V> extends AbstractMap<K, V> implements Map<
         }
 
         @Override
-        public V setValue(V object) {
-            V result = value;
-            value = object;
-            return result;
+        public V setValue(V newValue) {
+            V lastValue = value;
+            value = newValue;
+            return lastValue;
         }
 
         @Override
         public String toString() {
-            return super.get() + "=" + value;
+            return getKey() + "=" + getValue();
         }
 
     }
@@ -661,15 +660,15 @@ public class WeakIdentityHashMap<K, V> extends AbstractMap<K, V> implements Map<
         }
 
         @Override
-        public V setValue(V object) {
-            V result = value;
-            value = object;
-            return result;
+        public V setValue(V newValue) {
+            V lastValue = value;
+            value = newValue;
+            return lastValue;
         }
 
         @Override
         public String toString() {
-            return super.get() + "=" + value;
+            return getKey() + "=" + getValue();
         }
 
     }

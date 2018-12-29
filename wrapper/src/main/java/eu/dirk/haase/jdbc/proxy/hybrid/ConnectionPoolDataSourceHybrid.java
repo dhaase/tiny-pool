@@ -26,7 +26,7 @@ import java.util.logging.Logger;
  * {@link ConnectionPoolDataSourceHybrid#dataSourceProxy} und
  * {@link ConnectionPoolDataSourceHybrid#connectionPoolDataSourceProxy} die identisch sind
  * (siehe {@link ConnectionPoolDataSourceHybrid#ConnectionPoolDataSourceHybrid(DataSource, ConnectionPoolDataSource)}).</li>
- * <li>und die Instanz-Variablen durch Wrapper die zus&auml;tzliche Funktionalit&auml;ten bieten.</li>
+ * <li>und die Instanz-Variablen durch Wrapper die gew&uuml;nschten zus&auml;tzliche Funktionalit&auml;ten erhalten.</li>
  * </ul>
  *
  * @see DataSourceWrapper.Hybrid
