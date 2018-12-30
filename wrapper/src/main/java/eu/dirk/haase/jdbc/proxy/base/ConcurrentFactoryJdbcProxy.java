@@ -1,11 +1,12 @@
 package eu.dirk.haase.jdbc.proxy.base;
 
+import eu.dirk.haase.jdbc.proxy.common.IdentityCache;
+import eu.dirk.haase.jdbc.proxy.common.WeakIdentityHashMap;
+
 import javax.sql.*;
 import javax.transaction.xa.XAResource;
 import java.sql.Connection;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.BiFunction;
 
 /**
@@ -29,27 +30,19 @@ import java.util.function.BiFunction;
  */
 public abstract class ConcurrentFactoryJdbcProxy<T1> extends FactoryJdbcProxy<T1> {
 
-    private static final int WAITING_SECONDS = 30;
-    private final Lock lock;
+    private final IdentityCache identityCache;
 
     protected ConcurrentFactoryJdbcProxy(T1 delegate) {
-        super(delegate);
-        this.lock = new ReentrantLock(true);
+        this(delegate, new IdentityCache(new WeakIdentityHashMap<>(), new ReentrantReadWriteLock(true)));
+    }
+
+    protected ConcurrentFactoryJdbcProxy(T1 delegate, final IdentityCache identityCache) {
+        super(delegate, identityCache);
+        this.identityCache = identityCache;
     }
 
     protected final <T2> T2 wrapConcurrent(T2 delegate, BiFunction<T2, Object[], T2> objectMaker, final Object... argumentArray) {
-        try {
-            if (this.lock.tryLock(WAITING_SECONDS, TimeUnit.SECONDS)) {
-                return wrap(delegate, objectMaker, argumentArray);
-            } else {
-                throw new IllegalStateException("Waiting time of " + WAITING_SECONDS + " seconds is elapsed before the lock was acquired in class " + getClass());
-            }
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new IllegalStateException("Interrupted while acquiring the lock in class " + getClass(), e);
-        } finally {
-            this.lock.unlock();
-        }
+        return this.identityCache.getConcurrent(delegate, objectMaker, argumentArray);
     }
 
 }

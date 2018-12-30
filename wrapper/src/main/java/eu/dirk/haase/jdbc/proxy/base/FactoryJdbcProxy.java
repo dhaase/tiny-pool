@@ -33,7 +33,11 @@ import java.util.function.BiFunction;
 public abstract class FactoryJdbcProxy<T1> extends JdbcProxy<T1> {
     private final IdentityCache identityCache;
 
-    protected FactoryJdbcProxy(T1 delegate) {
+    protected FactoryJdbcProxy(final T1 delegate) {
+        this(delegate, new IdentityCache());
+    }
+
+    protected FactoryJdbcProxy(final T1 delegate, final IdentityCache identityCache) {
         super(delegate);
         this.identityCache = new IdentityCache();
     }

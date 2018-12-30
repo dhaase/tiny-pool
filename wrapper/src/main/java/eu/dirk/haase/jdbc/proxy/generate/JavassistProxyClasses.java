@@ -40,7 +40,7 @@ public class JavassistProxyClasses {
     private JavassistProxyClassGenerator xadataSourceGen;
 
     public JavassistProxyClasses(final BiFunction<String, Class<?>, String> classNameFun, final Map<Class<?>, Class<?>> iface2ClassMap) {
-        this.iface2ClassMap = iface2ClassMap;
+        this.iface2ClassMap = new HashMap<>(iface2ClassMap);
 
         if (iface2ClassMap.containsKey(ResultSet.class)) {
             this.resultSetGen = new JavassistProxyClassGenerator(classNameFun, ResultSet.class, iface2ClassMap.get(ResultSet.class), false);

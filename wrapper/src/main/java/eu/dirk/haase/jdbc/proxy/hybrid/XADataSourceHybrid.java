@@ -27,6 +27,7 @@ import java.util.logging.Logger;
  * (siehe {@link XADataSourceHybrid#XADataSourceHybrid(DataSource, XADataSource)}).</li>
  * <li>und die Instanz-Variablen durch Wrapper die gew&uuml;nschten zus&auml;tzliche Funktionalit&auml;ten erhalten.</li>
  * </ul>
+ *
  * @see DataSource
  * @see XADataSource
  * @see DataSourceWrapper.Hybrid

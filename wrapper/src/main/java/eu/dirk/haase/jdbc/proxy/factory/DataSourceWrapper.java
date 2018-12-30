@@ -7,19 +7,22 @@ import eu.dirk.haase.jdbc.proxy.hybrid.XADataSourceHybrid;
 import javax.sql.ConnectionPoolDataSource;
 import javax.sql.DataSource;
 import javax.sql.XADataSource;
+import java.io.Serializable;
 import java.lang.reflect.Constructor;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 
-public class DataSourceWrapper {
+public class DataSourceWrapper implements Serializable {
 
     private final Map<Class<?>, Object> interfaceToClassMap;
 
-    private volatile Constructor<ConnectionPoolDataSource> connectionPoolDataSourceConstructor;
-    private volatile Constructor<DataSource> dataSourceConstructor;
-    private volatile Constructor<XADataSource> xaDataSourceConstructor;
+    private transient volatile Constructor<ConnectionPoolDataSource> connectionPoolDataSourceConstructor;
+    private transient volatile Constructor<DataSource> dataSourceConstructor;
+    private transient volatile Constructor<XADataSource> xaDataSourceConstructor;
 
     public DataSourceWrapper(final Map<Class<?>, Object> interfaceToClassMap) throws Exception {
-        this.interfaceToClassMap = interfaceToClassMap;
+        this.interfaceToClassMap = Collections.unmodifiableMap(new HashMap<>(interfaceToClassMap));
         this.dataSourceConstructor = getDataSourceConstructor(null);
         this.xaDataSourceConstructor = getXADataSourceConstructor(null);
         this.connectionPoolDataSourceConstructor = getConnectionPoolDataSourceConstructor(null);
@@ -66,6 +69,10 @@ public class DataSourceWrapper {
         }
     }
 
+    public Map<Class<?>, Object> getInterfaceToClassMap() {
+        return interfaceToClassMap;
+    }
+
     private Constructor<XADataSource> getXADataSourceConstructor(Class<?> delegateClass) throws ClassNotFoundException {
         final Class<XADataSource> ifaceClass = XADataSource.class;
         if (interfaceToClassMap.containsKey(ifaceClass)) {
@@ -83,7 +90,7 @@ public class DataSourceWrapper {
     }
 
     private Class<?> loadClass(Map<Class<?>, Object> ifaceToClassMap, final Class<?> iface) throws ClassNotFoundException {
-        final Object proxyClass = ifaceToClassMap.get(iface);
+        Object proxyClass = ifaceToClassMap.get(iface);
         if (proxyClass instanceof String) {
             return Class.forName((String) proxyClass);
         }

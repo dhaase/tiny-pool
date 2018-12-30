@@ -74,11 +74,13 @@ public class WeakIdentityHashMap<K, V> extends AbstractMap<K, V> implements Map<
         if (loadFactor <= 0) {
             throw new IllegalArgumentException("loadFactor <= 0: " + loadFactor);
         }
-        entryCount = 0;
-        bucketArray = newBucketArray(capacity == 0 ? 1 : capacity);
+        this.entryCount = 0;
         this.loadFactorMillis = (int) (loadFactor * MILLI);
-        this.threshold = computeThreshold();
-        referenceQueue = new ReferenceQueue<K>();
+        this.referenceQueue = new ReferenceQueue<>();
+        final int minBucketSize = (capacity == 0 ? 1 : capacity);
+        expandBucketArray(minBucketSize);
+        System.out.println("bucketArray: " + bucketArray.length);
+        System.out.println("threshold: " + threshold);
     }
 
     /**
@@ -88,7 +90,7 @@ public class WeakIdentityHashMap<K, V> extends AbstractMap<K, V> implements Map<
      * @param map the mappings to add.
      */
     public WeakIdentityHashMap(Map<? extends K, ? extends V> map) {
-        this(map.size() * 2);
+        this(map.size());
         putAll(map);
     }
 
@@ -105,14 +107,6 @@ public class WeakIdentityHashMap<K, V> extends AbstractMap<K, V> implements Map<
             return 0;
         }
         return isEqualityByIdentity ? System.identityHashCode(thisKey) : thisKey.hashCode();
-    }
-
-    // Simple utility method to isolate unchecked cast for array creation
-    @SuppressWarnings("unchecked")
-    private static <K, V> Entry<K, V>[] newBucketArray(int minSize) {
-        int length = minSize * 2;
-        length = (length > 0 ? length : 1);
-        return new Entry[length];
     }
 
     private int bucketIndex(int hash) {
@@ -135,20 +129,20 @@ public class WeakIdentityHashMap<K, V> extends AbstractMap<K, V> implements Map<
                 // do nothing
             }
         }
+        reclaimedEntryCount = 0;
     }
 
-    private int computeThreshold() {
-        return (int) ((long) bucketArray.length * loadFactorMillis / MILLI);
+    private int computeThreshold(int bucketSize) {
+        return (int) ((long) bucketSize * loadFactorMillis / MILLI);
     }
 
-    public boolean containsEntry(Object object) {
-        if (object instanceof Map.Entry) {
-            Entry<?, ?> entry = getEntry(((Map.Entry<?, ?>) object)
-                    .getKey());
-            if (entry != null) {
-                Object key = entry.getKey();
-                if (key != null || entry.isNull()) {
-                    return object.equals(entry);
+    public boolean containsEntry(Object entryObj) {
+        if (entryObj instanceof Entry) {
+            final Entry<K, V> currEntry = getEntryOfKey(((Map.Entry<K, V>) entryObj).getKey());
+            if ((currEntry != null) && !currEntry.isReclaimed()) {
+                K key = currEntry.getKey();
+                if (key != null || currEntry.isNull()) {
+                    return currEntry.equals(entryObj);
                 }
             }
         }
@@ -158,57 +152,46 @@ public class WeakIdentityHashMap<K, V> extends AbstractMap<K, V> implements Map<
     /**
      * Returns whether this map contains the specified key.
      *
-     * @param key the key to search for.
+     * @param keyObj the key to search for.
      * @return {@code true} if this map contains the specified key,
      * {@code false} otherwise.
      */
     @Override
-    public boolean containsKey(Object key) {
-        return getEntry(key) != null;
+    public boolean containsKey(Object keyObj) {
+        return getEntryOfKey(keyObj) != null;
     }
 
     /**
      * Returns whether this map contains the specified value.
      *
-     * @param value the value to search for.
+     * @param valueObj the value to search for.
      * @return {@code true} if this map contains the specified value,
      * {@code false} otherwise.
      */
     @Override
-    public boolean containsValue(Object value) {
-        purge();
-        if (value != null) {
-            for (int i = bucketArray.length; --i >= 0; ) {
-                Entry<K, V> entry = bucketArray[i];
-                while (entry != null) {
-                    K key = entry.getKey();
-                    if ((key != null || entry.isNull())
-                            && value.equals(entry.getValue())) {
-                        return true;
-                    }
-                    entry = entry.getNext();
+    public boolean containsValue(Object valueObj) {
+        for (int i = bucketArray.length; --i >= 0; ) {
+            Entry<K, V> currEntry = bucketArray[i];
+            while ((currEntry != null) && !currEntry.isReclaimed()) {
+                final K currKey = currEntry.getKey();
+                if (((currKey != null) || currEntry.isNull()) && (currEntry.getValue() == null) && valueObj.equals(currEntry.getValue())) {
+                    return true;
                 }
-            }
-        } else {
-            for (int i = bucketArray.length; --i >= 0; ) {
-                Entry<K, V> entry = bucketArray[i];
-                while (entry != null) {
-                    K key = entry.getKey();
-                    if ((key != null || entry.isNull()) && entry.getValue() == null) {
-                        return true;
-                    }
-                    entry = entry.getNext();
-                }
+                currEntry = currEntry.getNext();
             }
         }
         return false;
     }
 
     private Entry createEntry(K key, V object, ReferenceQueue<K> queue) {
-        if (isSoftReference) {
-            return new SoftEntry<>(key, object, queue, isEqualityByIdentity);
+        if (key != null) {
+            if (isSoftReference) {
+                return new SoftEntry<>(key, object, queue, isEqualityByIdentity);
+            } else {
+                return new WeakEntry<>(key, object, queue, isEqualityByIdentity);
+            }
         } else {
-            return new WeakEntry<>(key, object, queue, isEqualityByIdentity);
+            return new NullEntry<>(object, isEqualityByIdentity);
         }
     }
 
@@ -222,11 +205,16 @@ public class WeakIdentityHashMap<K, V> extends AbstractMap<K, V> implements Map<
      */
     @Override
     public Set<Map.Entry<K, V>> entrySet() {
-        purge();
         if (entrySet == null) {
-            entrySet = new InnerSet(() -> new HashIterator<>(entry -> entry.getKey()), (e) -> containsEntry(e), (e) -> removeEntry(e));
+            entrySet = new InnerSet<>(() -> new HashIterator<>(entry -> entry), (e) -> containsEntry(e), (e) -> removeEntry(e));
         }
         return entrySet;
+    }
+
+    private void expandBucketArray(int minBucketSize) {
+        final Entry<K, V>[] newBucketArray = new Entry[minBucketSize * 2];
+        this.bucketArray = rehash(newBucketArray);
+        this.threshold = computeThreshold(newBucketArray.length);
     }
 
     /**
@@ -238,30 +226,32 @@ public class WeakIdentityHashMap<K, V> extends AbstractMap<K, V> implements Map<
      */
     @Override
     public V get(Object key) {
-        Entry<K, V> entry = getEntry(key);
+        Entry<K, V> entry = getEntryOfKey(key);
         return entry != null ? entry.getValue() : null;
     }
 
-    private Entry<K, V> getEntry(Object key) {
-        purge();
-        if (key != null) {
-            int index = bucketIndex(keyHash(isEqualityByIdentity, key));
-            Entry<K, V> entry = bucketArray[index];
-            while (entry != null) {
-                boolean isEqual = equalsKey(isEqualityByIdentity, key, entry.getKey());
-                if (isEqual) {
-                    return entry;
+    private Entry<K, V> getEntryOfKey(Object keyObj) {
+        if (entryCount > 0) {
+            if (keyObj != null) {
+                final int index = bucketIndex(keyHash(isEqualityByIdentity, keyObj));
+                Entry<K, V> currEntry = bucketArray[index];
+                while ((currEntry != null) && !currEntry.isReclaimed()) {
+                    final boolean isEqual = equalsKey(isEqualityByIdentity, keyObj, currEntry.getKey());
+                    if (isEqual) {
+                        return currEntry;
+                    }
+                    currEntry = currEntry.getNext();
                 }
-                entry = entry.getNext();
+            } else {
+                // Key-Argument is null
+                Entry<K, V> currEntry = bucketArray[0];
+                while ((currEntry != null) && !currEntry.isReclaimed()) {
+                    if (currEntry.isNull()) {
+                        return currEntry;
+                    }
+                    currEntry = currEntry.getNext();
+                }
             }
-            return null;
-        }
-        Entry<K, V> entry = bucketArray[0];
-        while (entry != null) {
-            if (entry.isNull()) {
-                return entry;
-            }
-            entry = entry.getNext();
         }
         return null;
     }
@@ -307,7 +297,6 @@ public class WeakIdentityHashMap<K, V> extends AbstractMap<K, V> implements Map<
      */
     @Override
     public Set<K> keySet() {
-        purge();
         if (keySet == null) {
             keySet = new InnerSet<>(() -> new HashIterator<>(entry -> entry.getKey()), (k) -> containsKey(k), (k) -> removeKey(k));
         }
@@ -315,146 +304,133 @@ public class WeakIdentityHashMap<K, V> extends AbstractMap<K, V> implements Map<
     }
 
     @SuppressWarnings("unchecked")
-    public void purge() {
-        int lastElementCount = entryCount;
-        Entry<K, V> toRemove;
-        while ((toRemove = (Entry<K, V>) referenceQueue.poll()) != null) {
-            removeEntry(toRemove);
+    public int purge() {
+        final int lastElementCount = entryCount;
+        Entry<K, V> entryToRemove;
+        while ((entryToRemove = (Entry<K, V>) referenceQueue.poll()) != null) {
+            removeEntry(entryToRemove);
         }
         reclaimedEntryCount += (lastElementCount - entryCount);
+        return reclaimedEntryCount;
     }
 
     /**
      * Maps the specified key to the specified value.
      *
-     * @param key   the key.
-     * @param value the value.
+     * @param key      the key.
+     * @param newValue the value.
      * @return the value of any previous mapping with the specified key or
      * {@code null} if there was no mapping.
      */
     @Override
-    public V put(K key, V value) {
-        purge();
-        int index = 0;
-        Entry<K, V> entry;
-        if (key != null) {
-            index = bucketIndex(keyHash(isEqualityByIdentity, key));
-            entry = bucketArray[index];
-            while (entry != null && !equalsKey(isEqualityByIdentity, key, entry.getKey())) {
-                entry = entry.getNext();
-            }
-        } else {
-            entry = bucketArray[0];
-            while (entry != null && !entry.isNull()) {
-                entry = entry.getNext();
-            }
-        }
-        if (entry == null) {
+    public V put(K key, V newValue) {
+        final Entry<K, V> currEntry = getEntryOfKey(key);
+        if (currEntry == null) {
+            purge();
+            final int index = bucketIndex(keyHash(isEqualityByIdentity, key));
             modificationCount++;
-            if (++entryCount > threshold) {
-                rehash();
-                index = bucketIndex(keyHash(isEqualityByIdentity, key));
+            entryCount++;
+            if (entryCount > threshold) {
+                expandBucketArray(bucketArray.length);
             }
-            entry = createEntry(key, value, referenceQueue);
-            entry.setNext(bucketArray[index]);
-            bucketArray[index] = entry;
+            final Entry<K, V> newEntry = createEntry(key, newValue, referenceQueue);
+            newEntry.setNext(bucketArray[index]);
+            bucketArray[index] = newEntry;
             return null;
         } else {
-            return entry.setValue(value);
+            return currEntry.setValue(newValue);
         }
     }
 
-    private void rehash() {
-        assert bucketArray.length > 0;
-        Entry<K, V>[] newData = newBucketArray(bucketArray.length);
-        for (Entry<K, V> entry : bucketArray) {
-            while (entry != null) {
-                int index = entry.isNull() ? 0 : bucketIndex(entry.hash());
-                Entry<K, V> next = entry.getNext();
-                entry.setNext(newData[index]);
-                newData[index] = entry;
-                entry = next;
+    private Entry<K, V>[] rehash(final Entry<K, V>[] newBucketArray) {
+        if (bucketArray != null) {
+            for (Entry<K, V> entry : bucketArray) {
+                while (entry != null) {
+                    int index = entry.isNull() ? 0 : bucketIndex(entry.hash());
+                    Entry<K, V> next = entry.getNext();
+                    entry.setNext(newBucketArray[index]);
+                    newBucketArray[index] = entry;
+                    entry = next;
+                }
             }
         }
-        bucketArray = newData;
-        this.threshold = computeThreshold();
+        return newBucketArray;
     }
 
     /**
      * Removes the mapping with the specified key from this map.
      *
-     * @param key the key of the mapping to remove.
+     * @param keyToRemove the key of the mapping to remove.
      * @return the value of the removed mapping or {@code null} if no mapping
      * for the specified key was found.
      */
     @Override
-    public V remove(Object key) {
+    public V remove(Object keyToRemove) {
         purge();
-        int index = 0;
-        Entry<K, V> entry, last = null;
-        if (key != null) {
-            index = bucketIndex(keyHash(isEqualityByIdentity, key));
-            entry = bucketArray[index];
-            while (entry != null && !(key == entry.getKey())) {
-                last = entry;
-                entry = entry.getNext();
+        final int index = bucketIndex(keyHash(isEqualityByIdentity, keyToRemove));
+        Entry<K, V> currEntry;
+        Entry<K, V> lastEntry = null;
+        if (keyToRemove != null) {
+            currEntry = bucketArray[index];
+            while (currEntry != null && !equalsKey(isEqualityByIdentity, keyToRemove, currEntry.getKey())) {
+                lastEntry = currEntry;
+                currEntry = currEntry.getNext();
             }
         } else {
-            entry = bucketArray[0];
-            while (entry != null && !entry.isNull()) {
-                last = entry;
-                entry = entry.getNext();
+            currEntry = bucketArray[0];
+            while (currEntry != null && !currEntry.isNull()) {
+                lastEntry = currEntry;
+                currEntry = currEntry.getNext();
             }
         }
-        if (entry != null) {
+        if (currEntry != null) {
             modificationCount++;
-            if (last == null) {
-                bucketArray[index] = entry.getNext();
+            if (lastEntry == null) {
+                bucketArray[index] = currEntry.getNext();
             } else {
-                last.setNext(entry.getNext());
+                lastEntry.setNext(currEntry.getNext());
             }
             entryCount--;
-            return entry.getValue();
+            return currEntry.getValue();
         }
         return null;
     }
 
-    private boolean removeEntry(Entry<K, V> toRemove) {
-        Entry<K, V> entry, last = null;
-        int index = bucketIndex(toRemove.hash());
-        entry = bucketArray[index];
-        // Ignore queued entries which cannot be found, the user could
-        // have removed them before they were queued, i.e. using clear()
-        while (entry != null) {
-            if (toRemove == entry) {
-                modificationCount++;
-                if (last == null) {
-                    bucketArray[index] = entry.getNext();
-                } else {
-                    last.setNext(entry.getNext());
+    private boolean removeEntry(Entry<K, V> entryToRemove) {
+        if (entryToRemove != null) {
+            final int index = bucketIndex(entryToRemove.hash());
+            Entry<K, V> currEntry = bucketArray[index];
+            Entry<K, V> lastEntry = null;
+            while (currEntry != null) {
+                if (entryToRemove == currEntry) {
+                    modificationCount++;
+                    if (lastEntry == null) {
+                        bucketArray[index] = currEntry.getNext();
+                    } else {
+                        lastEntry.setNext(currEntry.getNext());
+                    }
+                    entryCount--;
+                    break;
                 }
-                entryCount--;
-                break;
+                lastEntry = currEntry;
+                currEntry = currEntry.getNext();
             }
-            last = entry;
-            entry = entry.getNext();
-        }
 
-        return (last != null);
-    }
-
-    private boolean removeEntry(Object entry) {
-        if (containsEntry(entry)) {
-            WeakIdentityHashMap.this
-                    .remove(((Map.Entry<?, ?>) entry).getKey());
-            return true;
+            return (lastEntry != null);
         }
         return false;
     }
 
-    private boolean removeKey(Object key) {
-        if (containsKey(key)) {
-            WeakIdentityHashMap.this.remove(key);
+    private boolean removeEntry(Object entryToRemove) {
+        if (entryToRemove instanceof Entry) {
+            return removeEntry((Entry<K, V>) entryToRemove);
+        }
+        return false;
+    }
+
+    private boolean removeKey(Object keyToRemove) {
+        if (containsKey(keyToRemove)) {
+            remove(keyToRemove);
             return true;
         }
         return false;
@@ -465,8 +441,17 @@ public class WeakIdentityHashMap<K, V> extends AbstractMap<K, V> implements Map<
      */
     @Override
     public int size() {
-        purge();
         return entryCount;
+    }
+
+    public void trimToSize() {
+        purge();
+        final int minBucketSize = (entryCount == 0 ? 1 : entryCount);
+        if (minBucketSize < this.bucketArray.length) {
+            Entry<K, V>[] newBucketArray = new Entry[minBucketSize];
+            this.bucketArray = rehash(newBucketArray);
+            this.threshold = computeThreshold(newBucketArray.length);
+        }
     }
 
     /**
@@ -494,22 +479,27 @@ public class WeakIdentityHashMap<K, V> extends AbstractMap<K, V> implements Map<
      */
     @Override
     public Collection<V> values() {
-        purge();
         if (valuesCollection == null) {
             valuesCollection = new ValueCollection<>();
         }
         return valuesCollection;
     }
 
-
-    private interface Entry<K, V> extends Map.Entry<K, V> {
+    /**
+     * Entry-API mit der die Eintr&auml;ge gespeichert werden.
+     *
+     * @param <K> generische Typ des Schl&uuml;ussels.
+     * @param <V> generischer Typ des Wertes.
+     */
+    interface Entry<K, V> extends Map.Entry<K, V> {
 
         default boolean equalsEntry(Object thatObj) {
-            if (!(thatObj instanceof WeakIdentityHashMap.Entry)) {
+            if (!(thatObj instanceof Entry)) {
                 return false;
             }
-            final Map.Entry<?, ?> that = (WeakIdentityHashMap.Entry<?, ?>) thatObj;
-            return (equalsKey(this.isEqualityByIdentity(), this.getKey(), that.getKey()))
+            final Entry<?, ?> that = (Entry<?, ?>) thatObj;
+            return (this.isNull() == that.isNull()
+                    && equalsKey(this.isEqualityByIdentity(), this.getKey(), that.getKey()))
                     && (this.getValue() == null ? that.getValue() == null : this.getValue().equals(that.getValue()));
         }
 
@@ -521,22 +511,150 @@ public class WeakIdentityHashMap<K, V> extends AbstractMap<K, V> implements Map<
 
         boolean isEqualityByIdentity();
 
-        boolean isNull();
+        /**
+         * Liefert dann {@code true} wenn der Schl&uuml;ussel von vornherein
+         * {@code null} war.
+         * <p>
+         * Je nach Implementation liefert diese Methode stets den gleichen Wert:
+         * <ul>
+         * <li>bei {@link NullEntry} wird stets true,</li>
+         * <li>bei {@link WeakEntry} wird stets false und </li>
+         * <li>bei {@link SoftEntry} wird stets false zur&uuml;ckgeliefert</li>
+         * </ul>
+         *
+         * @return {@code true} wenn der Schl&uuml;ussel von vornherein
+         * {@code null} war.
+         */
+        default boolean isNull() {
+            return false;
+        }
 
+        /**
+         * Liefert {@code true} wenn das Schl&uuml;ussel-Object durch den Garbage-Collector
+         * wegger&auml;umt wurde.
+         * <p>
+         * Vom Garbage-Collector entfernt k&ouml;nnen nur Entr&auml;ge die entweder:
+         * <ul>
+         * <li>mit der Klasse {@link WeakEntry} oder </li>
+         * <li>mit der {@link SoftEntry} implementiert wurden.</li>
+         * </ul>
+         *
+         * @return {@code true} wenn das Schl&uuml;ussel-Object durch den Garbage-Collector
+         * wegger&auml;umt wurde.
+         */
+        default boolean isReclaimed() {
+            return getKey() == null;
+        }
     }
 
-    private static final class SoftEntry<K, V> extends SoftReference<K> implements Entry<K, V> {
-        final int hash;
-        boolean isEqualityByIdentity;
-        boolean isNull;
+    /**
+     * Entry-Implementation f&uuml;r Schl&uuml;ssel die {@code null} sind.
+     *
+     * @param <K> generische Typ des Schl&uuml;ussels.
+     * @param <V> generischer Typ des Wertes.
+     */
+    static final class NullEntry<K, V> implements Entry<K, V> {
+        final boolean isEqualityByIdentity;
         Entry<K, V> next;
         V value;
 
-        SoftEntry(K key, V object, ReferenceQueue<K> queue, boolean isEqualityByIdentity) {
+        NullEntry(final V value, final boolean isEqualityByIdentity) {
+            this.value = value;
+            this.isEqualityByIdentity = isEqualityByIdentity;
+        }
+
+        @Override
+        public boolean equals(Object other) {
+            return equalsEntry(other);
+        }
+
+        @Override
+        public K getKey() {
+            return null;
+        }
+
+        @Override
+        public Entry<K, V> getNext() {
+            return next;
+        }
+
+        @Override
+        public void setNext(Entry<K, V> entry) {
+            next = entry;
+        }
+
+        @Override
+        public V getValue() {
+            return value;
+        }
+
+        @Override
+        public int hash() {
+            return 0;
+        }
+
+        @Override
+        public int hashCode() {
+            return (value == null ? 0 : value.hashCode());
+        }
+
+        @Override
+        public boolean isEqualityByIdentity() {
+            return isEqualityByIdentity;
+        }
+
+        /**
+         * Liefert stets {@code true} da der Schl&uuml;ssel bereits von Anfang an
+         * {@code null} ist.
+         *
+         * @return stets {@code true}.
+         */
+        @Override
+        public boolean isNull() {
+            return true;
+        }
+
+        /**
+         * Liefert stets {@code false} da der Schl&uuml;ssel die bereits von Anfang an
+         * {@code null} ist vom Garbage-Collector nicht entfernt muss.
+         *
+         * @return stets {@code false}.
+         */
+        @Override
+        public boolean isReclaimed() {
+            return false;
+        }
+
+        @Override
+        public V setValue(V newValue) {
+            V lastValue = value;
+            value = newValue;
+            return lastValue;
+        }
+
+        @Override
+        public String toString() {
+            return "<null>=" + getValue();
+        }
+    }
+
+    /**
+     * Entry-Implementation f&uuml;r Schl&uuml;ssel die als {@link SoftReference}
+     * gespeichert werden.
+     *
+     * @param <K> generische Typ des Schl&uuml;ussels.
+     * @param <V> generischer Typ des Wertes.
+     */
+    static final class SoftEntry<K, V> extends SoftReference<K> implements Entry<K, V> {
+        final int hash;
+        final boolean isEqualityByIdentity;
+        Entry<K, V> next;
+        V value;
+
+        SoftEntry(final K key, final V value, final ReferenceQueue<K> queue, final boolean isEqualityByIdentity) {
             super(key, queue);
-            this.isNull = key == null;
             this.hash = keyHash(isEqualityByIdentity, key);
-            this.value = object;
+            this.value = value;
             this.isEqualityByIdentity = isEqualityByIdentity;
         }
 
@@ -581,11 +699,6 @@ public class WeakIdentityHashMap<K, V> extends AbstractMap<K, V> implements Map<
         }
 
         @Override
-        public boolean isNull() {
-            return isNull;
-        }
-
-        @Override
         public V setValue(V newValue) {
             V lastValue = value;
             value = newValue;
@@ -596,21 +709,25 @@ public class WeakIdentityHashMap<K, V> extends AbstractMap<K, V> implements Map<
         public String toString() {
             return getKey() + "=" + getValue();
         }
-
     }
 
-    private static final class WeakEntry<K, V> extends WeakReference<K> implements Entry<K, V> {
+    /**
+     * Entry-Implementation f&uuml;r Schl&uuml;ssel die als {@link WeakReference}
+     * gespeichert werden.
+     *
+     * @param <K> generische Typ des Schl&uuml;ssels.
+     * @param <V> generischer Typ des Wertes.
+     */
+    static final class WeakEntry<K, V> extends WeakReference<K> implements Entry<K, V> {
         final int hash;
-        boolean isEqualityByIdentity;
-        boolean isNull;
+        final boolean isEqualityByIdentity;
         Entry<K, V> next;
         V value;
 
-        WeakEntry(K key, V object, ReferenceQueue<K> queue, boolean isEqualityByIdentity) {
+        WeakEntry(final K key, final V value, final ReferenceQueue<K> queue, final boolean isEqualityByIdentity) {
             super(key, queue);
-            this.isNull = key == null;
             this.hash = keyHash(isEqualityByIdentity, key);
-            this.value = object;
+            this.value = value;
             this.isEqualityByIdentity = isEqualityByIdentity;
         }
 
@@ -655,11 +772,6 @@ public class WeakIdentityHashMap<K, V> extends AbstractMap<K, V> implements Map<
         }
 
         @Override
-        public boolean isNull() {
-            return isNull;
-        }
-
-        @Override
         public V setValue(V newValue) {
             V lastValue = value;
             value = newValue;
@@ -673,15 +785,25 @@ public class WeakIdentityHashMap<K, V> extends AbstractMap<K, V> implements Map<
 
     }
 
-    private class HashIterator<R> implements Iterator<R> {
-        private final Function<Entry<K, V>, R> entryFuntion;
-        private Entry<K, V> currentEntry, nextEntry;
+    /**
+     * An die jeweilige {@link WeakIdentityHashMap}-Instanz gebundener Iterator f&uuml;r
+     * die Collections die durch die Methoden {@link #entrySet()}, {@link #keySet()} und
+     * {@link #values()} erzeugt werden.
+     *
+     * @param <R> der Typ der Elemente des Iterators.
+     */
+    class HashIterator<R> implements Iterator<R> {
+        private final Function<Map.Entry<K, V>, R> entryFuntion;
+        private Entry<K, V> currEntry;
+        private int expectedModCount;
+        private Entry<K, V> nextEntry;
         private K nextKey;
-        private int position = 0, expectedModCount;
+        private int position = 0;
 
-        HashIterator(Function<Entry<K, V>, R> entryFuntion) {
+        HashIterator(Function<Map.Entry<K, V>, R> entryFuntion) {
+            purge();
             this.entryFuntion = entryFuntion;
-            expectedModCount = modificationCount;
+            this.expectedModCount = WeakIdentityHashMap.this.modificationCount;
         }
 
         @Override
@@ -691,8 +813,8 @@ public class WeakIdentityHashMap<K, V> extends AbstractMap<K, V> implements Map<
             }
             while (true) {
                 if (nextEntry == null) {
-                    while (position < bucketArray.length) {
-                        if ((nextEntry = bucketArray[position++]) != null) {
+                    while (position < WeakIdentityHashMap.this.bucketArray.length) {
+                        if ((nextEntry = WeakIdentityHashMap.this.bucketArray[position++]) != null) {
                             break;
                         }
                     }
@@ -711,11 +833,11 @@ public class WeakIdentityHashMap<K, V> extends AbstractMap<K, V> implements Map<
 
         @Override
         public R next() {
-            if (expectedModCount == modificationCount) {
+            if (expectedModCount == WeakIdentityHashMap.this.modificationCount) {
                 if (hasNext()) {
-                    currentEntry = nextEntry;
-                    nextEntry = currentEntry.getNext();
-                    R result = entryFuntion.apply(currentEntry);
+                    currEntry = nextEntry;
+                    nextEntry = currEntry.getNext();
+                    R result = entryFuntion.apply(currEntry);
                     // free the key
                     nextKey = null;
                     return result;
@@ -727,10 +849,10 @@ public class WeakIdentityHashMap<K, V> extends AbstractMap<K, V> implements Map<
 
         @Override
         public void remove() {
-            if (expectedModCount == modificationCount) {
-                if (currentEntry != null) {
-                    removeEntry(currentEntry);
-                    currentEntry = null;
+            if (expectedModCount == WeakIdentityHashMap.this.modificationCount) {
+                if (currEntry != null) {
+                    WeakIdentityHashMap.this.removeEntry(currEntry);
+                    currEntry = null;
                     expectedModCount++;
                     // cannot purge() as that would change the expectedModCount
                 } else {
@@ -742,6 +864,12 @@ public class WeakIdentityHashMap<K, V> extends AbstractMap<K, V> implements Map<
         }
     }
 
+    /**
+     * An die jeweilige {@link WeakIdentityHashMap}-Instanz gebundenes Set f&uuml;r
+     * die Methoden {@link #entrySet()} und {@link #keySet()}.
+     *
+     * @param <E> der Typ der Elemente des Sets.
+     */
     class InnerSet<E> extends AbstractSet<E> {
 
         final Predicate<Object> containsPredicate;
@@ -780,6 +908,12 @@ public class WeakIdentityHashMap<K, V> extends AbstractMap<K, V> implements Map<
         }
     }
 
+    /**
+     * An die jeweilige {@link WeakIdentityHashMap}-Instanz gebundene Collection f&uuml;r
+     * die Methode {@link #values()}.
+     *
+     * @param <E> der Typ der Elemente des Sets.
+     */
     class ValueCollection<E> extends AbstractCollection<E> {
 
         ValueCollection() {
@@ -797,7 +931,7 @@ public class WeakIdentityHashMap<K, V> extends AbstractMap<K, V> implements Map<
 
         @Override
         public Iterator<E> iterator() {
-            return new HashIterator<E>(entry -> (E) entry.getValue());
+            return WeakIdentityHashMap.this.new HashIterator<E>(entry -> (E) entry.getValue());
         }
 
         @Override
