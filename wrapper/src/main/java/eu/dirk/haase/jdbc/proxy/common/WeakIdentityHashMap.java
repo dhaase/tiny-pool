@@ -79,8 +79,6 @@ public class WeakIdentityHashMap<K, V> extends AbstractMap<K, V> implements Map<
         this.referenceQueue = new ReferenceQueue<>();
         final int minBucketSize = (capacity == 0 ? 1 : capacity);
         expandBucketArray(minBucketSize);
-        System.out.println("bucketArray: " + bucketArray.length);
-        System.out.println("threshold: " + threshold);
     }
 
     /**
