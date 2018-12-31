@@ -15,7 +15,7 @@ import java.util.concurrent.locks.StampedLock;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 @RunWith(BlockJUnit4ClassRunner.class)
-public class WriteLockTest {
+public class ReadWriteLockTest {
 
 
     private void test_for_concurrent_modification(final boolean isConcurrentModificationExpected, final ExecutorService executorService, Constructor<Callable<Boolean>> constructor, final CountDownLatch countDownLatch) throws Exception {

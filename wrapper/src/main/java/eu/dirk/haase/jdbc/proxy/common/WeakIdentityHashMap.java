@@ -835,7 +835,7 @@ public class WeakIdentityHashMap<K, V> extends AbstractMap<K, V> implements Map<
                 if (hasNext()) {
                     currEntry = nextEntry;
                     nextEntry = currEntry.getNext();
-                    R result = entryFuntion.apply(currEntry);
+                    final R result = entryFuntion.apply(currEntry);
                     // free the key
                     nextKey = null;
                     return result;
@@ -874,7 +874,7 @@ public class WeakIdentityHashMap<K, V> extends AbstractMap<K, V> implements Map<
         final Supplier<Iterator<E>> hashIteratorSupplier;
         final Function<Object, Boolean> removeFunction;
 
-        InnerSet(Supplier<Iterator<E>> hashIteratorSupplier, final Predicate<Object> containsPredicate, Function<Object, Boolean> removeFunction) {
+        InnerSet(final Supplier<Iterator<E>> hashIteratorSupplier, final Predicate<Object> containsPredicate, final Function<Object, Boolean> removeFunction) {
             this.hashIteratorSupplier = hashIteratorSupplier;
             this.containsPredicate = containsPredicate;
             this.removeFunction = removeFunction;

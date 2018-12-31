@@ -39,16 +39,18 @@ public final class IdentityCache implements Function<Object, Object> {
                 if ((newValue = mappingFunction.apply(key)) != null) {
                     int retry = 0;
                     while (true) {
-                        long writeStamp = stampedLock.tryConvertToWriteLock(stamp);
+                        final long writeStamp = stampedLock.tryConvertToWriteLock(stamp);
                         if (writeStamp != 0) {
                             stamp = writeStamp;
                             map.put(key, newValue);
                             return newValue;
                         } else if (retry++ >= RETRIES) {
-                            // Fallback
-                            stampedLock.unlockWrite(stamp);
-                            stamp = stampedLock.readLockInterruptibly();
-                        }
+                            // Fallback: Converting to write lock did not
+                            // work after retries.
+                            // Now exclusively acquire write lock here:
+                            stampedLock.unlockRead(stamp);
+                            stamp = stampedLock.writeLockInterruptibly();
+                         }
                     }
                 }
             }
@@ -57,7 +59,7 @@ public final class IdentityCache implements Function<Object, Object> {
             throw new IllegalStateException(ie);
         } finally {
             if (stamp != INVALID_STAMP) {
-                stampedLock.unlock(stamp);
+                stampedLock.unlock(stamp); // read or write lock
             }
         }
     }
