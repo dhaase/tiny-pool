@@ -6,7 +6,6 @@ import eu.dirk.haase.jdbc.proxy.common.WeakIdentityHashMap;
 import javax.sql.*;
 import javax.transaction.xa.XAResource;
 import java.sql.Connection;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.BiFunction;
 
 /**

@@ -4,9 +4,11 @@ public class SharedObject {
 
 
     private static final int WAITING_MILLIS = 200;
-    private int counter;
-    private int expectedModCount;
-    private int modificationCounter;
+
+    private volatile int counter;
+    private volatile int expectedModCount;
+    private volatile int modificationCounter;
+
     public SharedObject() {
     }
 

@@ -1,5 +1,6 @@
 package eu.dirk.haase.jdbc.lock;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.BlockJUnit4ClassRunner;
@@ -58,21 +59,13 @@ public class WriteLockTest {
         // Then Calculate speedup
         final long endNanos = System.nanoTime();
         final long durationOverall = TimeUnit.NANOSECONDS.toMillis(endNanos - startNanos);
-        System.out.println(constructor.getDeclaringClass().getSimpleName() + " -> Duration: " + durationOverall + " ms; Speedup: " + AbstractSharedObjectCallable.speedup(durationOverall, 10));
+        System.out.println(constructor.getDeclaringClass().getSimpleName() + " -> Duration: " + durationOverall + " ms; Speedup: " + AbstractSharedObjectCallable.speedup(durationOverall, 10) + " (1.5 theoretical maximum)");
         // Then Check results
         assertThat(isConcurrentModified).isEqualTo(isConcurrentModificationExpected);
     }
 
     @Test
-    public void test_for_no_concurrent_modification_synchronized() throws Exception {
-        final int nThreads = 10;
-        final CountDownLatch countDownLatch = new CountDownLatch(nThreads);
-        final ExecutorService executorService = Executors.newFixedThreadPool(nThreads);
-        final Constructor<Callable<Boolean>> constructor = (Constructor<Callable<Boolean>>) SharedObjectSynchronizedCallable.class.getDeclaredConstructors()[0];
-        test_for_concurrent_modification(false, executorService, constructor, countDownLatch);
-    }
-
-    @Test
+    @Ignore("Kein automatischer Test da nur einmaliger konzeptioneller Test")
     public void test_for_no_concurrent_modification_lock() throws Exception {
         final int nThreads = 10;
         final CountDownLatch countDownLatch = new CountDownLatch(nThreads);
@@ -100,13 +93,25 @@ public class WriteLockTest {
     }
 
     @Test
-    public void test_serial() throws Exception {
+    @Ignore("Kein automatischer Test da nur einmaliger konzeptioneller Test")
+    public void test_for_no_concurrent_modification_synchronized() throws Exception {
+        final int nThreads = 10;
+        final CountDownLatch countDownLatch = new CountDownLatch(nThreads);
+        final ExecutorService executorService = Executors.newFixedThreadPool(nThreads);
+        final Constructor<Callable<Boolean>> constructor = (Constructor<Callable<Boolean>>) SharedObjectSynchronizedCallable.class.getDeclaredConstructors()[0];
+        test_for_concurrent_modification(false, executorService, constructor, countDownLatch);
+    }
+
+    @Test
+    @Ignore("Kein automatischer Test da nur einmaliger konzeptioneller Test")
+    public void test_serial_execution() throws Exception {
         final ExecutorService executorService = Executors.newSingleThreadExecutor();
         final Constructor<Callable<Boolean>> constructor = (Constructor<Callable<Boolean>>) SharedObjectCallable.class.getDeclaredConstructors()[0];
         test_for_concurrent_modification(false, executorService, constructor, null);
     }
 
     @Test
+    @Ignore("Kein automatischer Test da nur einmaliger konzeptioneller Test")
     public void test_with_concurrent_modification() throws Exception {
         final int nThreads = 10;
         final CountDownLatch countDownLatch = new CountDownLatch(nThreads);
@@ -122,6 +127,15 @@ public class WriteLockTest {
         AbstractSharedObjectCallable(final SharedObject sharedObject, final CountDownLatch countDownLatch) {
             this.sharedObject = sharedObject;
             this.countDownLatch = countDownLatch;
+        }
+
+        public static double speedup(long durationOverall, long times) {
+            // in der Methode doWork() wird durch das SharedObject
+            // fuenf mal Thread.sleep() ausgefuehrt:
+            final long waitingMillis = SharedObject.getWaitingMillis() * 5;
+            // Insgesamt wird die Methode doWork() 'times' Mal aufgerufen
+            final double sequentialDuration = waitingMillis * times;
+            return (sequentialDuration / durationOverall);
         }
 
         final void await() throws InterruptedException {
@@ -142,15 +156,6 @@ public class WriteLockTest {
             final boolean isConcurrentModified4 = currentCounter != expectedCounter3;
             return (isConcurrentModified1 || isConcurrentModified2 || isConcurrentModified3 || isConcurrentModified4);
         }
-
-        public static double speedup(long durationOverall, long times) {
-            // in der Methode doWork() wird durch das SharedObject
-            // fuenf mal Thread.sleep() ausgefuehrt:
-            final long waitingMillis = SharedObject.getWaitingMillis() * 5;
-            // Insgesamt wird die Methode doWork() 'times' Mal aufgerufen
-            final double sequentialDuration = waitingMillis * times;
-            return (sequentialDuration / durationOverall);
-        }
     }
 
     static class SharedObjectCallable extends AbstractSharedObjectCallable implements Callable<Boolean> {
@@ -165,29 +170,11 @@ public class WriteLockTest {
             await();
             return doWork();
         }
-
     }
-
-
-    static class SharedObjectSynchronizedCallable extends AbstractSharedObjectCallable implements Callable<Boolean> {
-
-        SharedObjectSynchronizedCallable(final SharedObject sharedObject, final CountDownLatch countDownLatch) {
-            super(sharedObject, countDownLatch);
-        }
-
-        @Override
-        public Boolean call() throws Exception {
-            await();
-            synchronized (sharedObject) {
-                return doWork();
-            }
-        }
-    }
-
 
     static class SharedObjectLockCallable extends AbstractSharedObjectCallable implements Callable<Boolean> {
 
-        final static Lock lock = new ReentrantLock();
+        final static Lock lock = new ReentrantLock(true);
 
         SharedObjectLockCallable(final SharedObject sharedObject, final CountDownLatch countDownLatch) {
             super(sharedObject, countDownLatch);
@@ -205,10 +192,68 @@ public class WriteLockTest {
         }
     }
 
+    static class SharedObjectOptimisticStampedLockCallable extends AbstractSharedObjectCallable implements Callable<Boolean> {
+
+        static final int RETRIES = 5;
+        final static StampedLock stampedLock = new StampedLock();
+
+        SharedObjectOptimisticStampedLockCallable(SharedObject sharedObject, CountDownLatch countDownLatch) {
+            super(sharedObject, countDownLatch);
+        }
+
+        @Override
+        public Boolean call() throws Exception {
+            await();
+            return doWorkOptimisticReadWrite();
+        }
+
+
+        Boolean doWorkOptimisticReadWrite() throws InterruptedException {
+            int expectedCounter1;
+            int expectedCounter2;
+            int currentCounter;
+            boolean isConcurrentModified1;
+            long stamp = stampedLock.readLockInterruptibly();
+            try {
+                sharedObject.getCount();
+                int retry = 0;
+                while (true) {
+                    long writeStamp = stampedLock.tryConvertToWriteLock(stamp);
+                    if (writeStamp != 0) {
+                        stamp = writeStamp;
+                        expectedCounter1 = sharedObject.preProcess() + 1;
+                        currentCounter = sharedObject.count();
+                        retry = 0;
+                        while (true) {
+                            long readStamp = stampedLock.tryConvertToReadLock(stamp);
+                            if (readStamp != 0) {
+                                stamp = readStamp;
+                                expectedCounter2 = sharedObject.getCount();
+                                isConcurrentModified1 = sharedObject.postProcess();
+                                break;
+                            } else if (retry++ >= RETRIES) {
+                                stampedLock.unlockWrite(stamp);
+                                stamp = stampedLock.readLockInterruptibly();
+                            }
+                        }
+                        break;
+                    } else if (retry++ >= RETRIES) {
+                        stampedLock.unlockRead(stamp);
+                        stamp = stampedLock.writeLockInterruptibly();
+                    }
+                }
+            } finally {
+                stampedLock.unlock(stamp);
+            }
+            final boolean isConcurrentModified2 = currentCounter != expectedCounter1;
+            final boolean isConcurrentModified3 = currentCounter != expectedCounter2;
+            return (isConcurrentModified1 || isConcurrentModified2 || isConcurrentModified3);
+        }
+    }
 
     static class SharedObjectReadWriteLockCallable extends AbstractSharedObjectCallable implements Callable<Boolean> {
 
-        final static ReentrantReadWriteLock readWriteLock = new ReentrantReadWriteLock();
+        final static ReentrantReadWriteLock readWriteLock = new ReentrantReadWriteLock(true);
 
         SharedObjectReadWriteLockCallable(final SharedObject sharedObject, final CountDownLatch countDownLatch) {
             super(sharedObject, countDownLatch);
@@ -227,7 +272,7 @@ public class WriteLockTest {
             int currentCounter;
             boolean isConcurrentModified1;
             try {
-                readWriteLock.readLock().lock();
+                readWriteLock.readLock().lockInterruptibly();
                 sharedObject.getCount();
             } finally {
                 // Hochstufen (upgrade) des Locks ist nicht erlaubt,
@@ -236,18 +281,23 @@ public class WriteLockTest {
             }
             // Es entsteht hier eine Luecke in der weder
             // ein Read-Lock noch ein Write-Lock gesetzt ist.
+            // Mit ReentrantReadWriteLock ist es nicht moeglich
+            // vom Read-Lock zu einem Write-Lock zu wechseln
+            // ohne das es zu dieser Luecke kommt.
             boolean isReadLockHeld = false;
             try {
-                readWriteLock.writeLock().lock();
+                readWriteLock.writeLock().lockInterruptibly();
                 expectedCounter1 = sharedObject.preProcess() + 1;
                 currentCounter = sharedObject.count();
-                // Runterstufen (downgrade) des Locks ist erlaubt.
-                readWriteLock.readLock().lock();
-                // Wenn das Setzen des Read-Locks fehlschlaegt
-                // (siehe vorhergehendes Statement)
-                // dann koennen wir an Hands des Lock-Objects nicht
-                // feststellen ob der Read-Lock tatsaechlich gesetzt
+                // Runterstufen (downgrade) des Locks dagegen ist erlaubt.
+                // Wenn das Setzen des Read-Locks fehlschlaegt, zum Beispiel
+                // durch ein Thread-Interrupt (siehe naechstes Statement)
+                // dann koennen wir im nachhinein an Hand des Lock-Objects
+                // nicht feststellen ob der Read-Lock tatsaechlich gesetzt
                 // wurde oder nicht.
+                readWriteLock.readLock().lockInterruptibly();
+                // Wenn wir hier angekommen sind hat das Setzen des Read-Locks
+                // funktioniert.
                 // Daher hier die Status-Variable:
                 isReadLockHeld = true;
                 // Write-Lock wird freigegeben, Read-Lock ist
@@ -267,66 +317,21 @@ public class WriteLockTest {
             final boolean isConcurrentModified3 = currentCounter != expectedCounter2;
             return (isConcurrentModified1 || isConcurrentModified2 || isConcurrentModified3);
         }
-
-
     }
 
+    static class SharedObjectSynchronizedCallable extends AbstractSharedObjectCallable implements Callable<Boolean> {
 
-    static class SharedObjectOptimisticStampedLockCallable extends AbstractSharedObjectCallable implements Callable<Boolean> {
-
-        final static StampedLock stampedLock = new StampedLock();
-
-        SharedObjectOptimisticStampedLockCallable(SharedObject sharedObject, CountDownLatch countDownLatch) {
+        SharedObjectSynchronizedCallable(final SharedObject sharedObject, final CountDownLatch countDownLatch) {
             super(sharedObject, countDownLatch);
         }
 
         @Override
         public Boolean call() throws Exception {
             await();
-            return doWorkOptimisticReadWrite();
-        }
-
-
-        Boolean doWorkOptimisticReadWrite() throws InterruptedException {
-            int expectedCounter1;
-            int expectedCounter2;
-            int currentCounter;
-            boolean isConcurrentModified1;
-            long stamp = stampedLock.readLock();
-            try {
-                sharedObject.getCount();
-                while (true) {
-                    long writeStamp = stampedLock.tryConvertToWriteLock(stamp);
-                    if (writeStamp != 0) {
-                        stamp = writeStamp;
-                        expectedCounter1 = sharedObject.preProcess() + 1;
-                        currentCounter = sharedObject.count();
-                        while (true) {
-                            long readStamp = stampedLock.tryConvertToReadLock(stamp);
-                            if (readStamp != 0) {
-                                stamp = readStamp;
-                                expectedCounter2 = sharedObject.getCount();
-                                isConcurrentModified1 = sharedObject.postProcess();
-                                break;
-                            } else {
-                                stampedLock.unlockWrite(stamp);
-                                stamp = stampedLock.readLock();
-                            }
-                        }
-                        break;
-                    } else {
-                        stampedLock.unlockRead(stamp);
-                        stamp = stampedLock.writeLock();
-                    }
-                }
-            } finally {
-                stampedLock.unlock(stamp);
+            synchronized (sharedObject) {
+                return doWork();
             }
-            final boolean isConcurrentModified2 = currentCounter != expectedCounter1;
-            final boolean isConcurrentModified3 = currentCounter != expectedCounter2;
-            return (isConcurrentModified1 || isConcurrentModified2 || isConcurrentModified3);
         }
-
     }
 
 }
