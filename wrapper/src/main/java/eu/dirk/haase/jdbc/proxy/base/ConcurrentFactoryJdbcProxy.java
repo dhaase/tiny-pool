@@ -1,6 +1,5 @@
 package eu.dirk.haase.jdbc.proxy.base;
 
-import eu.dirk.haase.jdbc.proxy.common.AutoReleaseReadWriteLock;
 import eu.dirk.haase.jdbc.proxy.common.IdentityCache;
 import eu.dirk.haase.jdbc.proxy.common.WeakIdentityHashMap;
 
@@ -34,7 +33,7 @@ public abstract class ConcurrentFactoryJdbcProxy<T1> extends FactoryJdbcProxy<T1
     private final IdentityCache identityCache;
 
     protected ConcurrentFactoryJdbcProxy(T1 delegate) {
-        this(delegate, new IdentityCache(new WeakIdentityHashMap<>(), new AutoReleaseReadWriteLock()));
+        this(delegate, new IdentityCache(new WeakIdentityHashMap<>()));
     }
 
     protected ConcurrentFactoryJdbcProxy(T1 delegate, final IdentityCache identityCache) {
