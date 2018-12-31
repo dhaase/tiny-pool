@@ -39,7 +39,7 @@ public abstract class FactoryJdbcProxy<T1> extends JdbcProxy<T1> {
 
     protected FactoryJdbcProxy(final T1 delegate, final IdentityCache identityCache) {
         super(delegate);
-        this.identityCache = new IdentityCache();
+        this.identityCache = identityCache;
     }
 
     protected final <T2> T2 wrap(T2 delegate, BiFunction<T2, Object[], T2> objectMaker, final Object... argumentArray) {

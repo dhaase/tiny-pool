@@ -232,12 +232,14 @@ public class WriteLockTest {
                                 isConcurrentModified1 = sharedObject.postProcess();
                                 break;
                             } else if (retry++ >= RETRIES) {
+                                // Fallback
                                 stampedLock.unlockWrite(stamp);
                                 stamp = stampedLock.readLockInterruptibly();
                             }
                         }
                         break;
                     } else if (retry++ >= RETRIES) {
+                        // Fallback
                         stampedLock.unlockRead(stamp);
                         stamp = stampedLock.writeLockInterruptibly();
                     }

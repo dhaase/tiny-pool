@@ -6,6 +6,7 @@ import eu.dirk.haase.jdbc.proxy.common.WeakIdentityHashMap;
 import javax.sql.*;
 import javax.transaction.xa.XAResource;
 import java.sql.Connection;
+import java.util.concurrent.locks.StampedLock;
 import java.util.function.BiFunction;
 
 /**
@@ -32,7 +33,7 @@ public abstract class ConcurrentFactoryJdbcProxy<T1> extends FactoryJdbcProxy<T1
     private final IdentityCache identityCache;
 
     protected ConcurrentFactoryJdbcProxy(T1 delegate) {
-        this(delegate, new IdentityCache(new WeakIdentityHashMap<>()));
+        this(delegate, new IdentityCache(new WeakIdentityHashMap<>(), new StampedLock()));
     }
 
     protected ConcurrentFactoryJdbcProxy(T1 delegate, final IdentityCache identityCache) {
