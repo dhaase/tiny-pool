@@ -13,6 +13,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.concurrent.locks.StampedLock;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.filter;
 
 @RunWith(BlockJUnit4ClassRunner.class)
 public class ReadWriteLockTest {
@@ -218,14 +219,14 @@ public class ReadWriteLockTest {
                 sharedObject.getCount();
                 int retry = 0;
                 while (true) {
-                    long writeStamp = stampedLock.tryConvertToWriteLock(stamp);
+                    final long writeStamp = stampedLock.tryConvertToWriteLock(stamp);
                     if (writeStamp != 0) {
                         stamp = writeStamp;
                         expectedCounter1 = sharedObject.preProcess() + 1;
                         currentCounter = sharedObject.count();
                         retry = 0;
                         while (true) {
-                            long readStamp = stampedLock.tryConvertToReadLock(stamp);
+                            final long readStamp = stampedLock.tryConvertToReadLock(stamp);
                             if (readStamp != 0) {
                                 stamp = readStamp;
                                 expectedCounter2 = sharedObject.getCount();

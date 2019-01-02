@@ -62,6 +62,12 @@ public class DummyDataSource {
             if ("isClosed".equals(method.getName())) {
                 return false;
             }
+            if ("getAutoCommit".equals(method.getName())) {
+                return false;
+            }
+            if ("setAutoCommit".equals(method.getName())) {
+                return null;
+            }
             if ("toString".equals(method.getName())) {
                 return "Proxy-Connection: " + this;
             }

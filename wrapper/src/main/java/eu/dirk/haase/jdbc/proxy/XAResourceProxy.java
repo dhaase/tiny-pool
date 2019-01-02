@@ -5,7 +5,7 @@ import eu.dirk.haase.jdbc.proxy.base.ConcurrentFactoryJdbcProxy;
 import javax.sql.XAConnection;
 import javax.transaction.xa.XAResource;
 
-public class XAResourceProxy extends ConcurrentFactoryJdbcProxy<XAResource> {
+public abstract class XAResourceProxy extends ConcurrentFactoryJdbcProxy<XAResource> {
 
     private final XAConnection xaConnection;
 

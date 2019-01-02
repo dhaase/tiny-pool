@@ -40,13 +40,13 @@ public final class IdentityCache implements Function<Object, Object> {
                     int retry = 0;
                     while (true) {
                         final long writeStamp = stampedLock.tryConvertToWriteLock(stamp);
-                        if (writeStamp != 0) {
+                        if (writeStamp != INVALID_STAMP) {
                             stamp = writeStamp;
                             map.put(key, newValue);
                             return newValue;
                         } else if (retry++ >= RETRIES) {
                             // Fallback: Converting to write lock did not
-                            // work after retries.
+                            // work after some retries.
                             // Now exclusively acquire write lock here:
                             stampedLock.unlockRead(stamp);
                             stamp = stampedLock.writeLockInterruptibly();
