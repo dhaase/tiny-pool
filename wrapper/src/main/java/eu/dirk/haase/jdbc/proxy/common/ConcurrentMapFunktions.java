@@ -1,7 +1,9 @@
 package eu.dirk.haase.jdbc.proxy.common;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.StampedLock;
@@ -13,6 +15,16 @@ import java.util.function.Function;
  * Implementiert einige Map-Methoden, wie zum Beispiel
  * {@link Map#computeIfAbsent(Object, Function)},
  * um sie nebenl&auml;ufig ausf&uuml;hren zu k&ouml;nnen.
+ * <p>
+ * Hinweis: Auch wenn die nebenl&auml;ufigen Methoden mit
+ * einer {@link HashMap} fehlerfrei funktionieren.
+ * Ist, unter normalen Umst&auml;nden, eine {@link ConcurrentHashMap}
+ * wesentlich performanter.
+ * <p>
+ * Diese Methoden sind insbesondere f&uuml;r spezielle
+ * {@link Map}-Implementationen geeignet, f&uuml;r die es keine
+ * Implementationen f&uuml;r nebenl&auml;ufige ausgef&uuml;hrt werden
+ * k&ouml;nnen.
  *
  * @param <M> der generische Typ einer Map die gleichzeitig auch das Interface
  *            {@link ModificationStampingObject} implementiert.
