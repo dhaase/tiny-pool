@@ -16,10 +16,10 @@ import java.util.function.Function;
  * {@link Map#computeIfAbsent(Object, Function)},
  * um sie nebenl&auml;ufig ausf&uuml;hren zu k&ouml;nnen.
  * <p>
- * Hinweis: Auch wenn die nebenl&auml;ufigen Methoden mit
- * einer {@link HashMap} fehlerfrei funktionieren.
- * Ist, unter normalen Umst&auml;nden, eine {@link ConcurrentHashMap}
- * wesentlich performanter.
+ * Hinweis: Auch wenn diese Methoden im nebenl&auml;ufigen
+ * Kontext mit einer {@link HashMap} fehlerfrei funktionieren,
+ * ist es unter normalen Umst&auml;nden wesentlich performanter
+ * eine {@link ConcurrentHashMap} einzusetzen.
  * <p>
  * Diese Methoden sind insbesondere f&uuml;r spezielle
  * {@link Map}-Implementationen geeignet, f&uuml;r die es keine
