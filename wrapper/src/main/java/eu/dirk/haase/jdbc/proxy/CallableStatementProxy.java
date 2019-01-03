@@ -22,9 +22,4 @@ public abstract class CallableStatementProxy extends FactoryJdbcProxy<CallableSt
         return connection;
     }
 
-    @Override
-    public final boolean isClosed() throws SQLException {
-        return delegate.isClosed();
-    }
-
 }

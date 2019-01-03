@@ -22,11 +22,6 @@ public abstract class StatementProxy extends FactoryJdbcProxy<Statement> impleme
         return connection;
     }
 
-    @Override
-    public final boolean isClosed() throws SQLException {
-        return delegate.isClosed();
-    }
-
 }
 
 

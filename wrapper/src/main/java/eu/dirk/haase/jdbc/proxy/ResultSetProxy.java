@@ -22,10 +22,5 @@ public abstract class ResultSetProxy extends JdbcProxy<ResultSet> implements Clo
         return statement;
     }
 
-    @Override
-    public final boolean isClosed() throws SQLException {
-        return delegate.isClosed();
-    }
-
 
 }

@@ -25,12 +25,9 @@ public abstract class ConnectionProxy extends FactoryJdbcProxy<Connection> imple
         return dataSource;
     }
 
-    @Override
-    public final boolean isClosed() throws SQLException {
-        return delegate.isClosed();
-    }
-
     public final void setAutoCommit(boolean autoCommit) throws SQLException {
         throw new SQLException("AutoCommit is not allowed for transaction managed Connection.");
     }
+
+
 }

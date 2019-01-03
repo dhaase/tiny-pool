@@ -22,10 +22,5 @@ public abstract class PreparedStatementProxy extends FactoryJdbcProxy<PreparedSt
         return connection;
     }
 
-    @Override
-    public final boolean isClosed() throws SQLException {
-        return delegate.isClosed();
-    }
-
 
 }

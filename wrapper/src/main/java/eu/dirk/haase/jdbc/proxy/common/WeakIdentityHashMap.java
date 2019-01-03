@@ -4,6 +4,8 @@ import java.lang.ref.ReferenceQueue;
 import java.lang.ref.SoftReference;
 import java.lang.ref.WeakReference;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.StampedLock;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -23,11 +25,14 @@ import java.util.function.Supplier;
 public class WeakIdentityHashMap<K, V> extends AbstractMap<K, V> implements Map<K, V> {
     private static final float DEFAULT_LOAD_FACTOR = 0.75f;
     private static final int DEFAULT_SIZE = 16;
+    private static final long INVALID_STAMP = 0;
     /**
      * Denoting a factor of one thousandth (1/1000)
      */
     private static final int MILLI = 1000;
+    private static final int RETRIES = 5;
     private final int loadFactorMillis;
+    private final AtomicLong modificationCount;
     private final ReferenceQueue<K> referenceQueue;
     private Entry<K, V>[] bucketArray;
     private int entryCount;
@@ -35,7 +40,6 @@ public class WeakIdentityHashMap<K, V> extends AbstractMap<K, V> implements Map<
     private boolean isEqualityByIdentity = true;
     private boolean isSoftReference = false;
     private transient Set<K> keySet;
-    private volatile int modificationCount;
     private int reclaimedEntryCount;
     private int threshold;
     private transient Collection<V> valuesCollection;
@@ -74,6 +78,7 @@ public class WeakIdentityHashMap<K, V> extends AbstractMap<K, V> implements Map<
         if (loadFactor <= 0) {
             throw new IllegalArgumentException("loadFactor <= 0: " + loadFactor);
         }
+        this.modificationCount = new AtomicLong(0);
         this.entryCount = 0;
         this.loadFactorMillis = (int) (loadFactor * MILLI);
         this.referenceQueue = new ReferenceQueue<>();
@@ -122,12 +127,71 @@ public class WeakIdentityHashMap<K, V> extends AbstractMap<K, V> implements Map<
         if (entryCount > 0) {
             entryCount = 0;
             Arrays.fill(bucketArray, null);
-            modificationCount++;
+            modificationCount.incrementAndGet();
             while (referenceQueue.poll() != null) {
                 // do nothing
             }
         }
         reclaimedEntryCount = 0;
+    }
+
+    /**
+     * Ein Implementation von {@link Map#computeIfAbsent(Object, Function)} die nebenl&auml;fig
+     * aufgerufen werden kann.
+     *
+     * @param stampedLock     der Lock mit dem die Schreib-/ Lese-Synchronisation erfolgt.
+     * @param key             der Schl&uuml;ssel mit dem der Wert aus der Funktion zugeordnet werden soll.
+     * @param mappingFunction die Funktion die den Wert passend zum Schl&uuml;ssel liefert.
+     * @return der Wert mit dem der Schl&uuml;ssel zugeordnet wurde.
+     * @throws InterruptedException wenn der aktuelle Thread durch {@link Thread#interrupt()} unterbrochen
+     *                              wurde.
+     */
+    public V computeIfAbsent(final StampedLock stampedLock,
+                             final K key,
+                             final Function<? super K, ? extends V> mappingFunction) throws InterruptedException {
+        long stamp = INVALID_STAMP;
+        try {
+            stamp = stampedLock.readLockInterruptibly();
+            V currValue;
+            if ((currValue = get(key)) == null) {
+                V newValue;
+                if ((newValue = mappingFunction.apply(key)) != null) {
+                    int retry = 0;
+                    while (true) {
+                        final long writeStamp = stampedLock.tryConvertToWriteLock(stamp);
+                        if (writeStamp != INVALID_STAMP) {
+                            stamp = writeStamp;
+                            put(key, newValue);
+                            return newValue;
+
+                        } else if (retry++ >= RETRIES) {
+                            // Fallback: Die Konvertierung des Read-Locks zu einem
+                            // Write-Lock hat nicht funktioniert.
+                            long expectedModCount = modificationCount.get();
+                            // Werde daher einen exklusiven Write-Lock anfordern.
+                            // Dazu muss aber zuerst der Read-Lock freigegeben werden:
+                            stampedLock.unlockRead(stamp);
+                            // Hier entsteht eine Luecke, da nun kein Lock
+                            // weder Read- noch Write-Lock gesetzt ist.
+                            stamp = stampedLock.writeLockInterruptibly();
+                            // Daher muss nachfolgend nochmal geprueft werden
+                            // ob sich zwischenzeitlich die Map veraendert hat:
+                            if ((expectedModCount != modificationCount.get()) && ((currValue = get(key)) != null)) {
+                                // Die Map hat sich zwischenzeitlich veraendert
+                                // und zu dem angegebenen Schluessel gibt es bereits
+                                // einen Wert:
+                                return currValue;
+                            }
+                        }
+                    }
+                }
+            }
+            return currValue;
+        } finally {
+            if (stamp != INVALID_STAMP) {
+                stampedLock.unlock(stamp); // Read- oder Write-Lock
+            }
+        }
     }
 
     private int computeThreshold(int bucketSize) {
@@ -254,6 +318,10 @@ public class WeakIdentityHashMap<K, V> extends AbstractMap<K, V> implements Map<
         return null;
     }
 
+    public long getModificationCount() {
+        return modificationCount.get();
+    }
+
     public int getReclaimedEntryCount() {
         return reclaimedEntryCount;
     }
@@ -326,7 +394,8 @@ public class WeakIdentityHashMap<K, V> extends AbstractMap<K, V> implements Map<
         if (currEntry == null) {
             purge();
             final int index = bucketIndex(keyHash(isEqualityByIdentity, key));
-            modificationCount++;
+            modificationCount.incrementAndGet();
+            ;
             entryCount++;
             if (entryCount > threshold) {
                 expandBucketArray(bucketArray.length);
@@ -382,7 +451,8 @@ public class WeakIdentityHashMap<K, V> extends AbstractMap<K, V> implements Map<
             }
         }
         if (currEntry != null) {
-            modificationCount++;
+            modificationCount.incrementAndGet();
+            ;
             if (lastEntry == null) {
                 bucketArray[index] = currEntry.getNext();
             } else {
@@ -401,7 +471,8 @@ public class WeakIdentityHashMap<K, V> extends AbstractMap<K, V> implements Map<
             Entry<K, V> lastEntry = null;
             while (currEntry != null) {
                 if (entryToRemove == currEntry) {
-                    modificationCount++;
+                    modificationCount.incrementAndGet();
+                    ;
                     if (lastEntry == null) {
                         bucketArray[index] = currEntry.getNext();
                     } else {
@@ -793,7 +864,7 @@ public class WeakIdentityHashMap<K, V> extends AbstractMap<K, V> implements Map<
     class HashIterator<R> implements Iterator<R> {
         private final Function<Map.Entry<K, V>, R> entryFuntion;
         private Entry<K, V> currEntry;
-        private int expectedModCount;
+        private long expectedModCount;
         private Entry<K, V> nextEntry;
         private K nextKey;
         private int position = 0;
@@ -801,7 +872,7 @@ public class WeakIdentityHashMap<K, V> extends AbstractMap<K, V> implements Map<
         HashIterator(Function<Map.Entry<K, V>, R> entryFuntion) {
             purge();
             this.entryFuntion = entryFuntion;
-            this.expectedModCount = WeakIdentityHashMap.this.modificationCount;
+            this.expectedModCount = WeakIdentityHashMap.this.modificationCount.get();
         }
 
         @Override
@@ -831,7 +902,7 @@ public class WeakIdentityHashMap<K, V> extends AbstractMap<K, V> implements Map<
 
         @Override
         public R next() {
-            if (expectedModCount == WeakIdentityHashMap.this.modificationCount) {
+            if (this.expectedModCount == WeakIdentityHashMap.this.modificationCount.get()) {
                 if (hasNext()) {
                     currEntry = nextEntry;
                     nextEntry = currEntry.getNext();
@@ -847,7 +918,7 @@ public class WeakIdentityHashMap<K, V> extends AbstractMap<K, V> implements Map<
 
         @Override
         public void remove() {
-            if (expectedModCount == WeakIdentityHashMap.this.modificationCount) {
+            if (expectedModCount == WeakIdentityHashMap.this.modificationCount.get()) {
                 if (currEntry != null) {
                     WeakIdentityHashMap.this.removeEntry(currEntry);
                     currEntry = null;
