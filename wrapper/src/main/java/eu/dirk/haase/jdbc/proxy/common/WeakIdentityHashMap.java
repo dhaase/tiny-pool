@@ -135,6 +135,32 @@ public class WeakIdentityHashMap<K, V> extends AbstractMap<K, V> implements Map<
     }
 
     /**
+     * Eine Implementation von {@link Map#compute(Object, BiFunction)} die nebenl&auml;fig
+     * aufgerufen werden kann.
+     * <p>
+     * Diese Methode ist optimiert f&uuml;r Situationen wo die Lese-Operationen im Verh&auml;ltnis
+     * zu den Schreib-Operationen h&auml;ufiger erfolgreich aufgerufen werden k&ouml;nnen.
+     * Wenn also &uuml;berwiegend zu dem angegebenen Schl&uuml;ssel sich in dieser Map bereits
+     * ein entsprechender Wert befindet.
+     * <p>
+     * Hinweis: Der Thread der diese Methode ausf&uuml;hrt darf nicht schon bereits
+     * in Besitz eines Read- oder Write-Lock sein. Andernfalls
+     *
+     * @param stampedLock       die Sperre mit der die Schreib-/ Lese-Synchronisation erfolgt.
+     * @param key               der Schl&uuml;ssel mit dem der Wert aus der Funktion zugeordnet werden soll.
+     * @param remappingFunction die Funktion die den Wert passend zum Schl&uuml;ssel liefert.
+     * @return der alte Wert der dem Schl&uuml;ssel zugeordnet war.
+     * @throws InterruptedException wenn der aktuelle Thread durch {@link Thread#interrupt()} unterbrochen
+     *                              wurde.
+     * @throws TimeoutException     der Lock konnte nicht rechtzeitig in vorgegebener Zeit angefordert werden.
+     */
+    public V compute(final StampedLock stampedLock,
+                     final K key,
+                     final BiFunction<? super K, ? super V, ? extends V> remappingFunction) throws InterruptedException, TimeoutException {
+        return this.concurrentMapFunktions.compute(stampedLock, key, remappingFunction);
+    }
+
+    /**
      * Eine Implementation von {@link Map#computeIfAbsent(Object, Function)} die nebenl&auml;fig
      * aufgerufen werden kann.
      * <p>
@@ -372,6 +398,33 @@ public class WeakIdentityHashMap<K, V> extends AbstractMap<K, V> implements Map<
     }
 
     /**
+     * Eine Implementation von {@link Map#merge(Object, Object, BiFunction)} die nebenl&auml;fig
+     * aufgerufen werden kann.
+     * <p>
+     * Diese Methode ist optimiert f&uuml;r Situationen wo die Lese-Operationen im Verh&auml;ltnis
+     * zu den Schreib-Operationen h&auml;ufiger erfolgreich aufgerufen werden k&ouml;nnen.
+     * Wenn also &uuml;berwiegend zu dem angegebenen Schl&uuml;ssel sich in dieser Map bereits
+     * ein entsprechender Wert befindet.
+     * <p>
+     * Hinweis: Der Thread der diese Methode ausf&uuml;hrt darf nicht schon bereits
+     * in Besitz eines Read- oder Write-Lock sein. Andernfalls
+     *
+     * @param stampedLock       die Sperre mit der die Schreib-/ Lese-Synchronisation erfolgt.
+     * @param key               der Schl&uuml;ssel mit dem der Wert aus der Funktion zugeordnet werden soll.
+     * @param remappingFunction die Funktion die den Wert passend zum Schl&uuml;ssel liefert.
+     * @return der alte Wert der dem Schl&uuml;ssel zugeordnet war.
+     * @throws InterruptedException wenn der aktuelle Thread durch {@link Thread#interrupt()} unterbrochen
+     *                              wurde.
+     * @throws TimeoutException     der Lock konnte nicht rechtzeitig in vorgegebener Zeit angefordert werden.
+     */
+    public V merge(final StampedLock stampedLock,
+                   final K key,
+                   final V value,
+                   final BiFunction<? super V, ? super V, ? extends V> remappingFunction) throws InterruptedException, TimeoutException {
+        return this.concurrentMapFunktions.merge(stampedLock, key, value, remappingFunction);
+    }
+
+    /**
      * Liefert bei jeder Zustandsver&auml;nderung einen neuen Stempel-Wert.
      *
      * @return der neuen Stempel-Wert bei einer neuen Zustandsver&auml;nderung.
@@ -590,6 +643,54 @@ public class WeakIdentityHashMap<K, V> extends AbstractMap<K, V> implements Map<
      */
     public boolean replace(final StampedLock stampedLock, K key, V oldValue, V newValue) throws InterruptedException, TimeoutException {
         return this.concurrentMapFunktions.replace(stampedLock, key, oldValue, newValue);
+    }
+
+    /**
+     * Eine Implementation von {@link Map#replace(Object, Object, Object)} die nebenl&auml;fig
+     * aufgerufen werden kann.
+     * <p>
+     * Diese Methode ist optimiert f&uuml;r Situationen wo die Lese-Operationen im Verh&auml;ltnis
+     * zu den Schreib-Operationen h&auml;ufiger erfolgreich aufgerufen werden k&ouml;nnen.
+     * Wenn also &uuml;berwiegend zu dem angegebenen Schl&uuml;ssel sich in dieser Map bereits
+     * ein entsprechender Wert befindet.
+     * <p>
+     * Hinweis: Der Thread der diese Methode ausf&uuml;hrt darf nicht schon bereits
+     * in Besitz eines Read- oder Write-Lock sein.
+     *
+     * @param stampedLock der Lock mit dem die Schreib-/ Lese-Synchronisation erfolgt.
+     * @param key         der Schl&uuml;ssel mit dem der Wert aus der Funktion zugeordnet werden soll.
+     * @param newValue    der neue Wert die dem Schl&uuml;ssel zugeordnet werden soll wenn entweder
+     *                    der alte Wert {@code null} ist oder sich von dem neuen Wert unterscheidet.
+     * @return der alte Wert der ersetzt wurde.
+     * @throws InterruptedException wenn der aktuelle Thread durch {@link Thread#interrupt()} unterbrochen
+     *                              wurde.
+     * @throws TimeoutException     der Lock konnte nicht rechtzeitig in vorgegebener Zeit angefordert werden.
+     */
+    public V replace(final StampedLock stampedLock, K key, V newValue) throws InterruptedException, TimeoutException {
+        return this.concurrentMapFunktions.replace(stampedLock, key, newValue);
+    }
+
+    /**
+     * Eine Implementation von {@link Map#replaceAll(BiFunction)} die nebenl&auml;fig
+     * aufgerufen werden kann.
+     * <p>
+     * Diese Methode ist optimiert f&uuml;r Situationen wo die Lese-Operationen im Verh&auml;ltnis
+     * zu den Schreib-Operationen h&auml;ufiger erfolgreich aufgerufen werden k&ouml;nnen.
+     * Wenn also &uuml;berwiegend zu dem angegebenen Schl&uuml;ssel sich in dieser Map bereits
+     * ein entsprechender Wert befindet.
+     * <p>
+     * Hinweis: Der Thread der diese Methode ausf&uuml;hrt darf nicht schon bereits
+     * in Besitz eines Read- oder Write-Lock sein. Andernfalls
+     *
+     * @param stampedLock       die Sperre mit der die Schreib-/ Lese-Synchronisation erfolgt.
+     * @param remappingFunction die Funktion die den Wert passend zum Schl&uuml;ssel liefert.
+     * @throws InterruptedException wenn der aktuelle Thread durch {@link Thread#interrupt()} unterbrochen
+     *                              wurde.
+     * @throws TimeoutException     der Lock konnte nicht rechtzeitig in vorgegebener Zeit angefordert werden.
+     */
+    public void replaceAll(final StampedLock stampedLock,
+                           final BiFunction<? super K, ? super V, ? extends V> remappingFunction) throws InterruptedException, TimeoutException {
+        this.concurrentMapFunktions.replaceAll(stampedLock, remappingFunction);
     }
 
     /**
