@@ -24,6 +24,8 @@ import java.util.function.Function;
  * @see Map#remove(java.lang.Object, java.lang.Object)
  * @see Map#replace(java.lang.Object, java.lang.Object, java.lang.Object)
  * @see Map#replace(java.lang.Object, java.lang.Object)
+ * @see Map#replaceAll(java.util.function.BiFunction)
+ * @see Map#merge(java.lang.Object, java.lang.Object, java.util.function.BiFunction)
  */
 public class ConcurrentMapFunktions<M extends Map<K, V> & ModificationStampingObject, K, V> {
 
@@ -34,10 +36,24 @@ public class ConcurrentMapFunktions<M extends Map<K, V> & ModificationStampingOb
     private final M delegate;
     private final long timeoutSeconds;
 
+    /**
+     * Erzeugt ein neues {@link ConcurrentMapFunktions}-Object.
+     *
+     * @param delegate das {@link Map}-Objekt f&uuml;r das die Methoden
+     *                 nebenl&auml;ufig ausgef&uuml;hrt werden sollen.
+     */
     public ConcurrentMapFunktions(final M delegate) {
         this(delegate, LOCK_TIMEOUT_SECONDS);
     }
 
+    /**
+     * Erzeugt ein neues {@link ConcurrentMapFunktions}-Object.
+     *
+     * @param delegate       das {@link Map}-Objekt f&uuml;r das die Methoden
+     *                       nebenl&auml;ufig ausgef&uuml;hrt werden sollen.
+     * @param timeoutSeconds Anzahl der Sekunden die maximal bei der Anforderung
+     *                       einer Sperre gewartet werden soll.
+     */
     public ConcurrentMapFunktions(final M delegate, final long timeoutSeconds) {
         this.delegate = delegate;
         this.timeoutSeconds = timeoutSeconds;
@@ -66,7 +82,7 @@ public class ConcurrentMapFunktions<M extends Map<K, V> & ModificationStampingOb
                      final K key,
                      final BiFunction<? super K, ? super V, ? extends V> remappingFunction) throws TimeoutException, InterruptedException {
         Objects.requireNonNull(remappingFunction);
-        long[] inOutStamp = {INVALID_STAMP};
+        final long[] inOutStamp = {INVALID_STAMP};
         try {
             inOutStamp[0] = tryReadLock(stampedLock);
             V oldValue = delegate.get(key);
@@ -154,7 +170,7 @@ public class ConcurrentMapFunktions<M extends Map<K, V> & ModificationStampingOb
                              final K key,
                              final Function<? super K, ? extends V> mappingFunction) throws InterruptedException, TimeoutException {
         Objects.requireNonNull(mappingFunction);
-        long[] inOutStamp = {INVALID_STAMP};
+        final long[] inOutStamp = {INVALID_STAMP};
         try {
             inOutStamp[0] = tryReadLock(stampedLock);
             V currValue;
@@ -193,7 +209,7 @@ public class ConcurrentMapFunktions<M extends Map<K, V> & ModificationStampingOb
                               final K key,
                               final BiFunction<? super K, ? super V, ? extends V> remappingFunction) throws InterruptedException, TimeoutException {
         Objects.requireNonNull(remappingFunction);
-        long[] inOutStamp = {INVALID_STAMP};
+        final long[] inOutStamp = {INVALID_STAMP};
         try {
             inOutStamp[0] = tryReadLock(stampedLock);
             V oldValue;
@@ -239,7 +255,7 @@ public class ConcurrentMapFunktions<M extends Map<K, V> & ModificationStampingOb
                    final BiFunction<? super V, ? super V, ? extends V> remappingFunction) throws TimeoutException, InterruptedException {
         Objects.requireNonNull(remappingFunction);
         Objects.requireNonNull(value);
-        long[] inOutStamp = {INVALID_STAMP};
+        final long[] inOutStamp = {INVALID_STAMP};
         try {
             inOutStamp[0] = tryReadLock(stampedLock);
             V oldValue = delegate.get(key);
@@ -289,7 +305,7 @@ public class ConcurrentMapFunktions<M extends Map<K, V> & ModificationStampingOb
      * @throws TimeoutException     der Lock konnte nicht rechtzeitig in vorgegebener Zeit angefordert werden.
      */
     public V putIfAbsent(final StampedLock stampedLock, K key, V newValue) throws InterruptedException, TimeoutException {
-        long[] inOutStamp = {INVALID_STAMP};
+        final long[] inOutStamp = {INVALID_STAMP};
         try {
             inOutStamp[0] = tryReadLock(stampedLock);
             return putIfAbsent(stampedLock, inOutStamp, key, newValue);
@@ -380,7 +396,7 @@ public class ConcurrentMapFunktions<M extends Map<K, V> & ModificationStampingOb
      * @throws TimeoutException     der Lock konnte nicht rechtzeitig in vorgegebener Zeit angefordert werden.
      */
     public boolean remove(final StampedLock stampedLock, Object key, Object value) throws InterruptedException, TimeoutException {
-        long[] inOutStamp = {INVALID_STAMP};
+        final long[] inOutStamp = {INVALID_STAMP};
         try {
             inOutStamp[0] = tryReadLock(stampedLock);
             return remove(stampedLock, inOutStamp, key, value);
@@ -478,7 +494,7 @@ public class ConcurrentMapFunktions<M extends Map<K, V> & ModificationStampingOb
      * @throws TimeoutException     der Lock konnte nicht rechtzeitig in vorgegebener Zeit angefordert werden.
      */
     public boolean replace(final StampedLock stampedLock, K key, V oldValue, V newValue) throws InterruptedException, TimeoutException {
-        long[] inOutStamp = {INVALID_STAMP};
+        final long[] inOutStamp = {INVALID_STAMP};
         try {
             inOutStamp[0] = tryReadLock(stampedLock);
             return replace(stampedLock, inOutStamp, key, oldValue, newValue);
@@ -511,7 +527,7 @@ public class ConcurrentMapFunktions<M extends Map<K, V> & ModificationStampingOb
      * @throws TimeoutException     der Lock konnte nicht rechtzeitig in vorgegebener Zeit angefordert werden.
      */
     public V replace(final StampedLock stampedLock, K key, V newValue) throws InterruptedException, TimeoutException {
-        long[] inOutStamp = {INVALID_STAMP};
+        final long[] inOutStamp = {INVALID_STAMP};
         try {
             inOutStamp[0] = tryReadLock(stampedLock);
             return replace(stampedLock, inOutStamp, key, newValue);
@@ -662,14 +678,14 @@ public class ConcurrentMapFunktions<M extends Map<K, V> & ModificationStampingOb
      * ein entsprechender Wert befindet.
      *
      * @param stampedLock       der Lock mit dem die Schreib-/ Lese-Synchronisation erfolgt.
-     * @param remappingFunction die Funktion die den Wert passend zum Schl&uuml;ssel liefert.
+     * @param remappingFunction die Funktion die den neuen Wert passend zum Schl&uuml;ssel liefert.
      * @throws InterruptedException wenn der aktuelle Thread durch {@link Thread#interrupt()} unterbrochen
      *                              wurde.
      * @throws TimeoutException     der Lock konnte nicht rechtzeitig in vorgegebener Zeit angefordert werden.
      */
     public void replaceAll(final StampedLock stampedLock, final BiFunction<? super K, ? super V, ? extends V> remappingFunction) throws TimeoutException, InterruptedException {
         Objects.requireNonNull(remappingFunction);
-        long[] inOutStamp = {INVALID_STAMP};
+        final long[] inOutStamp = {INVALID_STAMP};
         try {
             inOutStamp[0] = tryReadLock(stampedLock);
             delegate.forEach(new BiConsumer<K, V>() {
@@ -722,7 +738,7 @@ public class ConcurrentMapFunktions<M extends Map<K, V> & ModificationStampingOb
      *                              angefordert werden.
      */
     private long tryReadLock(final StampedLock stampedLock) throws InterruptedException, TimeoutException {
-        long readStamp = stampedLock.tryReadLock(timeoutSeconds, TimeUnit.SECONDS);
+        final long readStamp = stampedLock.tryReadLock(timeoutSeconds, TimeUnit.SECONDS);
         if (readStamp == INVALID_STAMP) {
             throw new TimeoutException("Unable to acquire a read lock within " + timeoutSeconds + " seconds.");
         }
@@ -741,7 +757,7 @@ public class ConcurrentMapFunktions<M extends Map<K, V> & ModificationStampingOb
      *                              angefordert werden.
      */
     private long tryWriteLock(final StampedLock stampedLock) throws InterruptedException, TimeoutException {
-        long writeStamp = stampedLock.tryWriteLock(timeoutSeconds, TimeUnit.SECONDS);
+        final long writeStamp = stampedLock.tryWriteLock(timeoutSeconds, TimeUnit.SECONDS);
         if (writeStamp == INVALID_STAMP) {
             throw new TimeoutException("Unable to acquire a write lock within " + timeoutSeconds + " seconds.");
         }
