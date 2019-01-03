@@ -4,8 +4,11 @@ import java.lang.ref.ReferenceQueue;
 import java.lang.ref.SoftReference;
 import java.lang.ref.WeakReference;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.StampedLock;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -136,8 +139,30 @@ public class WeakIdentityHashMap<K, V> extends AbstractMap<K, V> implements Map<
     }
 
     /**
-     * Ein Implementation von {@link Map#computeIfAbsent(Object, Function)} die nebenl&auml;fig
+     * Eine Implementation von {@link Map#computeIfAbsent(Object, Function)} die nebenl&auml;fig
      * aufgerufen werden kann.
+     * <p>
+     * Diese Methode ist optimiert f&uuml;r Situationen wo die Lese-Operationen im Verh&auml;ltnis
+     * zu den Schreib-Operationen h&auml;ufiger erfolgreich aufgerufen werden k&ouml;nnen.
+     * Wenn also &uuml;berwiegend zu dem angegebenen Schl&uuml;ssel sich in dieser Map bereits
+     * ein entsprechender Wert befindet.
+     * <p>
+     * Diese Methode ist &auml;quivalent zu dem Folgenden Code implementiert:
+     * <pre><code>
+     * public V computeIfAbsent(final StampedLock stampedLock,
+     *                          final K key,
+     *                          final Function&lt;? super K, ? extends V&gt; mappingFunction) throws InterruptedException {
+     *     Objects.requireNonNull(mappingFunction);
+     *     V currValue;
+     *     V newValue;
+     *     return ((currValue = get(key)) == null &&
+     *             (newValue = mappingFunction.apply(key)) != null &&
+     *             (currValue = putIfAbsent(stampedLock, key, newValue)) == null) ? newValue : currValue;
+     * }
+     * </code></pre>
+     * <p>
+     * Hinweis: Der Thread der diese Methode ausf&uuml;hrt darf nicht schon bereits
+     * in Besitz eines Read- oder Write-Lock sein.
      *
      * @param stampedLock     der Lock mit dem die Schreib-/ Lese-Synchronisation erfolgt.
      * @param key             der Schl&uuml;ssel mit dem der Wert aus der Funktion zugeordnet werden soll.
@@ -148,48 +173,64 @@ public class WeakIdentityHashMap<K, V> extends AbstractMap<K, V> implements Map<
      */
     public V computeIfAbsent(final StampedLock stampedLock,
                              final K key,
-                             final Function<? super K, ? extends V> mappingFunction) throws InterruptedException {
-        long stamp = INVALID_STAMP;
+                             final Function<? super K, ? extends V> mappingFunction) throws InterruptedException, TimeoutException {
+        Objects.requireNonNull(mappingFunction);
+        long[] inOutStamp = {INVALID_STAMP};
         try {
-            stamp = stampedLock.readLockInterruptibly();
+            inOutStamp[0] = tryReadLock(stampedLock);
             V currValue;
-            if ((currValue = get(key)) == null) {
-                V newValue;
-                if ((newValue = mappingFunction.apply(key)) != null) {
-                    int retry = 0;
-                    while (true) {
-                        final long writeStamp = stampedLock.tryConvertToWriteLock(stamp);
-                        if (writeStamp != INVALID_STAMP) {
-                            stamp = writeStamp;
-                            put(key, newValue);
-                            return newValue;
+            V newValue;
+            return ((currValue = get(key)) == null &&
+                    (newValue = mappingFunction.apply(key)) != null &&
+                    (currValue = putIfAbsent(stampedLock, inOutStamp, key, newValue)) == null) ? newValue : currValue;
+        } finally {
+            if (inOutStamp[0] != INVALID_STAMP) {
+                stampedLock.unlock(inOutStamp[0]); // Read- oder Write-Lock
+            }
+        }
+    }
 
-                        } else if (retry++ >= RETRIES) {
-                            // Fallback: Die Konvertierung des Read-Locks zu einem
-                            // Write-Lock hat nicht funktioniert.
-                            long expectedModCount = modificationCount.get();
-                            // Werde daher einen exklusiven Write-Lock anfordern.
-                            // Dazu muss aber zuerst der Read-Lock freigegeben werden:
-                            stampedLock.unlockRead(stamp);
-                            // Hier entsteht eine Luecke, da nun kein Lock
-                            // weder Read- noch Write-Lock gesetzt ist.
-                            stamp = stampedLock.writeLockInterruptibly();
-                            // Daher muss nachfolgend nochmal geprueft werden
-                            // ob sich zwischenzeitlich die Map veraendert hat:
-                            if ((expectedModCount != modificationCount.get()) && ((currValue = get(key)) != null)) {
-                                // Die Map hat sich zwischenzeitlich veraendert
-                                // und zu dem angegebenen Schluessel gibt es bereits
-                                // einen Wert:
-                                return currValue;
-                            }
-                        }
+    /**
+     * Eine Implementation von {@link Map#computeIfPresent(Object, BiFunction)} die nebenl&auml;fig
+     * aufgerufen werden kann.
+     * <p>
+     * Diese Methode ist optimiert f&uuml;r Situationen wo die Lese-Operationen im Verh&auml;ltnis
+     * zu den Schreib-Operationen h&auml;ufiger erfolgreich aufgerufen werden k&ouml;nnen.
+     * Wenn also &uuml;berwiegend zu dem angegebenen Schl&uuml;ssel sich in dieser Map bereits
+     * ein entsprechender Wert befindet.
+     * <p>
+     * Hinweis: Der Thread der diese Methode ausf&uuml;hrt darf nicht schon bereits
+     * in Besitz eines Read- oder Write-Lock sein. Andernfalls
+     *
+     * @param stampedLock       der Lock mit dem die Schreib-/ Lese-Synchronisation erfolgt.
+     * @param key               der Schl&uuml;ssel mit dem der Wert aus der Funktion zugeordnet werden soll.
+     * @param remappingFunction die Funktion die den Wert passend zum Schl&uuml;ssel liefert.
+     * @return der alte Wert der dem Schl&uuml;ssel zugeordnet war.
+     * @throws InterruptedException wenn der aktuelle Thread durch {@link Thread#interrupt()} unterbrochen
+     *                              wurde.
+     */
+    public V computeIfPresent(final StampedLock stampedLock,
+                              final K key,
+                              final BiFunction<? super K, ? super V, ? extends V> remappingFunction) throws InterruptedException, TimeoutException {
+        Objects.requireNonNull(remappingFunction);
+        long[] inOutStamp = {INVALID_STAMP};
+        try {
+            inOutStamp[0] = tryReadLock(stampedLock);
+            V oldValue;
+            while ((oldValue = get(key)) != null) {
+                final V newValue = remappingFunction.apply(key, oldValue);
+                if (newValue != null) {
+                    if (replace(stampedLock, inOutStamp, key, oldValue, newValue)) {
+                        return newValue;
                     }
+                } else if (remove(stampedLock, inOutStamp, key, oldValue)) {
+                    return null;
                 }
             }
-            return currValue;
+            return oldValue;
         } finally {
-            if (stamp != INVALID_STAMP) {
-                stampedLock.unlock(stamp); // Read- oder Write-Lock
+            if (inOutStamp[0] != INVALID_STAMP) {
+                stampedLock.unlock(inOutStamp[0]); // Read- oder Write-Lock
             }
         }
     }
@@ -409,6 +450,95 @@ public class WeakIdentityHashMap<K, V> extends AbstractMap<K, V> implements Map<
         }
     }
 
+    /**
+     * Eine Implementation von {@link Map#putIfAbsent(Object, Object)} die nebenl&auml;fig
+     * aufgerufen werden kann.
+     * <p>
+     * Diese Methode ist optimiert f&uuml;r Situationen wo die Lese-Operationen im Verh&auml;ltnis
+     * zu den Schreib-Operationen h&auml;ufiger erfolgreich aufgerufen werden k&ouml;nnen.
+     * Wenn also &uuml;berwiegend zu dem angegebenen Schl&uuml;ssel sich in dieser Map bereits
+     * ein entsprechender Wert befindet.
+     * <p>
+     * Hinweis: Der Thread der diese Methode ausf&uuml;hrt darf nicht schon bereits
+     * in Besitz eines Read- oder Write-Lock sein.
+     *
+     * @param stampedLock der Lock mit dem die Schreib-/ Lese-Synchronisation erfolgt.
+     * @param key         der Schl&uuml;ssel mit dem der Wert aus der Funktion zugeordnet werden soll.
+     * @param newValue    der neue Wert die dem Schl&uuml;ssel zugeordnet werden soll wenn (noch) kein
+     *                    Wert zu dem angegebenen Schl&uuml;ssel existiert.
+     * @return der Wert mit dem der Schl&uuml;ssel zugeordnet wurde.
+     * @throws InterruptedException wenn der aktuelle Thread durch {@link Thread#interrupt()} unterbrochen
+     *                              wurde.
+     */
+    public V putIfAbsent(final StampedLock stampedLock, K key, V newValue) throws InterruptedException, TimeoutException {
+        long[] inOutStamp = {INVALID_STAMP};
+        try {
+            inOutStamp[0] = tryReadLock(stampedLock);
+            return putIfAbsent(stampedLock, inOutStamp, key, newValue);
+        } finally {
+            if (inOutStamp[0] != INVALID_STAMP) {
+                stampedLock.unlock(inOutStamp[0]); // Read- oder Write-Lock
+            }
+        }
+    }
+
+    /**
+     * Eine Implementation von {@link Map#putIfAbsent(Object, Object)} die nebenl&auml;fig
+     * aufgerufen werden kann.
+     * <p>
+     * Diese Methode wird intern von {@link WeakIdentityHashMap#putIfAbsent(StampedLock, Object, Object)}
+     * aufgerufen und erwartet das bei Aufruf bereits ein Read-Lock gesetzt ist.
+     * <p>
+     * Diese Methode ist optimiert f&uuml;r Situationen wo die Lese-Operationen im Verh&auml;ltnis
+     * zu den Schreib-Operationen h&auml;ufiger erfolgreich aufgerufen werden k&ouml;nnen.
+     * Wenn also &uuml;berwiegend zu dem angegebenen Schl&uuml;ssel sich in dieser Map bereits
+     * ein entsprechender Wert befindet.
+     *
+     * @param stampedLock der Lock mit dem die Schreib-/ Lese-Synchronisation erfolgt.
+     * @param inOutStamp  ein Array mit einem Lock-Stempel der bei Aufruf einen Read-Stempel enthalten
+     *                    muss und nach der R&uuml;ckkehr einen m&ouml;glicherweise neuen Lock-Stempel
+     *                    enth&auml;lt der anschliessend freigegeben werden muss.
+     * @param key         der Schl&uuml;ssel mit dem der Wert aus der Funktion zugeordnet werden soll.
+     * @param newValue    der neue Wert die dem Schl&uuml;ssel zugeordnet werden soll wenn (noch) kein
+     *                    Wert zu dem angegebenen Schl&uuml;ssel existiert.
+     * @return der Wert mit dem der Schl&uuml;ssel zugeordnet wurde.
+     * @throws InterruptedException wenn der aktuelle Thread durch {@link Thread#interrupt()} unterbrochen
+     *                              wurde.
+     */
+    private V putIfAbsent(final StampedLock stampedLock, final long[] inOutStamp, K key, V newValue) throws InterruptedException, TimeoutException {
+        V currValue = get(key);
+        if (currValue == null) {
+            int retry = 0;
+            while (true) {
+                final long writeStamp = stampedLock.tryConvertToWriteLock(inOutStamp[0]);
+                if (writeStamp != INVALID_STAMP) {
+                    inOutStamp[0] = writeStamp;
+                    return put(key, newValue);
+                } else if (retry++ >= RETRIES) {
+                    // Fallback: Die Konvertierung des Read-Locks zu einem
+                    // Write-Lock hat nicht funktioniert.
+                    final long expectedModCount = modificationCount.get();
+                    // Werde daher einen exklusiven Write-Lock anfordern.
+                    // Dazu muss aber zuerst der Read-Lock freigegeben werden:
+                    stampedLock.unlockRead(inOutStamp[0]);
+                    // Hier entsteht eine Luecke und damit eine Race-Condition,
+                    // da nun kein Lock, weder Read- noch Write-Lock, gesetzt ist.
+                    inOutStamp[0] = tryWriteLock(stampedLock);
+                    // Der exklusive Write-Lock ist jetzt gesetzt. Jetzt muss
+                    // nachfolgend nochmal geprueft werden ob sich zwischenzeitlich
+                    // die Map veraendert hat:
+                    if ((expectedModCount != modificationCount.get()) && ((currValue = get(key)) != null)) {
+                        // Die Map hat sich zwischenzeitlich veraendert
+                        // und zu dem angegebenen Schluessel gibt es bereits
+                        // einen Wert:
+                        return currValue;
+                    }
+                }
+            }
+        }
+        return currValue;
+    }
+
     private Entry<K, V>[] rehash(final Entry<K, V>[] newBucketArray) {
         if (bucketArray != null) {
             for (Entry<K, V> entry : bucketArray) {
@@ -422,6 +552,100 @@ public class WeakIdentityHashMap<K, V> extends AbstractMap<K, V> implements Map<
             }
         }
         return newBucketArray;
+    }
+
+    /**
+     * Eine Implementation von {@link Map#remove(Object, Object)} die nebenl&auml;fig
+     * aufgerufen werden kann.
+     * <p>
+     * Diese Methode ist optimiert f&uuml;r Situationen wo die Lese-Operationen im Verh&auml;ltnis
+     * zu den Schreib-Operationen h&auml;ufiger erfolgreich aufgerufen werden k&ouml;nnen.
+     * Wenn also &uuml;berwiegend zu dem angegebenen Schl&uuml;ssel sich in dieser Map bereits
+     * ein entsprechender Wert befindet.
+     * <p>
+     * Hinweis: Der Thread der diese Methode ausf&uuml;hrt darf nicht schon bereits
+     * in Besitz eines Read- oder Write-Lock sein.
+     *
+     * @param stampedLock der Lock mit dem die Schreib-/ Lese-Synchronisation erfolgt.
+     * @param key         der Schl&uuml;ssel mit dem der Wert aus der Funktion zugeordnet werden soll.
+     * @param value       der Wert der dem Schl&uuml;ssel in dieser Map zugeordnet sein soll.
+     * @return {@code true} wenn der Eintrag entfernt wurde.
+     * @throws InterruptedException wenn der aktuelle Thread durch {@link Thread#interrupt()} unterbrochen
+     *                              wurde.
+     */
+    public boolean remove(final StampedLock stampedLock, Object key, Object value) throws InterruptedException, TimeoutException {
+        long[] inOutStamp = {INVALID_STAMP};
+        try {
+            inOutStamp[0] = tryReadLock(stampedLock);
+            return remove(stampedLock, inOutStamp, key, value);
+        } finally {
+            if (inOutStamp[0] != INVALID_STAMP) {
+                stampedLock.unlock(inOutStamp[0]); // Read- oder Write-Lock
+            }
+        }
+    }
+
+    /**
+     * Eine Implementation von {@link Map#remove(Object, Object)} die nebenl&auml;fig
+     * aufgerufen werden kann.
+     * <p>
+     * Diese Methode wird intern von {@link WeakIdentityHashMap#remove(StampedLock, Object, Object)}
+     * aufgerufen und erwartet das bei Aufruf bereits ein Read-Lock gesetzt ist.
+     * <p>
+     * Diese Methode ist optimiert f&uuml;r Situationen wo die Lese-Operationen im Verh&auml;ltnis
+     * zu den Schreib-Operationen h&auml;ufiger erfolgreich aufgerufen werden k&ouml;nnen.
+     * Wenn also &uuml;berwiegend zu dem angegebenen Schl&uuml;ssel sich in dieser Map bereits
+     * ein entsprechender Wert befindet.
+     *
+     * @param stampedLock der Lock mit dem die Schreib-/ Lese-Synchronisation erfolgt.
+     * @param inOutStamp  ein Array mit einem Lock-Stempel der bei Aufruf einen Read-Stempel enthalten
+     *                    muss und nach der R&uuml;ckkehr einen m&ouml;glicherweise neuen Lock-Stempel
+     *                    enth&auml;lt der anschliessend freigegeben werden muss.
+     * @param key         der Schl&uuml;ssel mit dem der Wert aus der Funktion zugeordnet werden soll.
+     * @param value       der Wert der dem Schl&uuml;ssel in dieser Map zugeordnet sein soll.
+     * @return {@code true} wenn der Eintrag entfernt wurde.
+     * @throws InterruptedException wenn der aktuelle Thread durch {@link Thread#interrupt()} unterbrochen
+     *                              wurde.
+     * @throws TimeoutException     der Lock konnte nicht in vorgegebener Zeit angefordert werden.
+     */
+    private boolean remove(final StampedLock stampedLock, final long[] inOutStamp, final Object key, final Object value) throws InterruptedException, TimeoutException {
+        Object currValue = get(key);
+        if (!Objects.equals(currValue, value) ||
+                (currValue == null && !containsKey(key))) {
+            return false;
+        }
+        int retry = 0;
+        while (true) {
+            final long writeStamp = stampedLock.tryConvertToWriteLock(inOutStamp[0]);
+            if (writeStamp != INVALID_STAMP) {
+                inOutStamp[0] = writeStamp;
+                remove(key);
+                return true;
+            } else if (retry++ >= RETRIES) {
+                // Fallback: Die Konvertierung des Read-Locks zu einem
+                // Write-Lock hat nicht funktioniert.
+                long expectedModCount = modificationCount.get();
+                // Werde daher einen exklusiven Write-Lock anfordern.
+                // Dazu muss aber zuerst der Read-Lock freigegeben werden:
+                stampedLock.unlockRead(inOutStamp[0]);
+                // Hier entsteht eine Luecke und damit eine Race-Condition,
+                // da nun kein Lock, weder Read- noch Write-Lock, gesetzt ist.
+                inOutStamp[0] = tryWriteLock(stampedLock);
+                // Der exklusive Write-Lock ist jetzt gesetzt. Jetzt muss
+                // nachfolgend nochmal geprueft werden ob sich zwischenzeitlich
+                // die Map veraendert hat:
+                if ((expectedModCount != modificationCount.get())) {
+                    // Die Map hat sich zwischenzeitlich veraendert
+                    // und zu dem angegebenen Schluessel gibt es bereits
+                    // einen Wert:
+                    currValue = get(key);
+                    if (!Objects.equals(currValue, value) ||
+                            (currValue == null && !containsKey(key))) {
+                        return false;
+                    }
+                }
+            }
+        }
     }
 
     /**
@@ -506,6 +730,104 @@ public class WeakIdentityHashMap<K, V> extends AbstractMap<K, V> implements Map<
     }
 
     /**
+     * Eine Implementation von {@link Map#replace(Object, Object, Object)} die nebenl&auml;fig
+     * aufgerufen werden kann.
+     * <p>
+     * Diese Methode ist optimiert f&uuml;r Situationen wo die Lese-Operationen im Verh&auml;ltnis
+     * zu den Schreib-Operationen h&auml;ufiger erfolgreich aufgerufen werden k&ouml;nnen.
+     * Wenn also &uuml;berwiegend zu dem angegebenen Schl&uuml;ssel sich in dieser Map bereits
+     * ein entsprechender Wert befindet.
+     * <p>
+     * Hinweis: Der Thread der diese Methode ausf&uuml;hrt darf nicht schon bereits
+     * in Besitz eines Read- oder Write-Lock sein.
+     *
+     * @param stampedLock der Lock mit dem die Schreib-/ Lese-Synchronisation erfolgt.
+     * @param key         der Schl&uuml;ssel mit dem der Wert aus der Funktion zugeordnet werden soll.
+     * @param oldValue    der alte Wert der dem Schl&uuml;ssel bereits zugeordnet sein soll.
+     * @param newValue    der neue Wert die dem Schl&uuml;ssel zugeordnet werden soll wenn entweder
+     *                    der alte Wert {@code null} ist oder sich von dem neuen Wert unterscheidet.
+     * @return {@code true} wenn der alte Wert ersetzt wurde.
+     * @throws InterruptedException wenn der aktuelle Thread durch {@link Thread#interrupt()} unterbrochen
+     *                              wurde.
+     */
+    public boolean replace(final StampedLock stampedLock, K key, V oldValue, V newValue) throws InterruptedException, TimeoutException {
+        long[] inOutStamp = {INVALID_STAMP};
+        try {
+            inOutStamp[0] = tryReadLock(stampedLock);
+            return replace(stampedLock, inOutStamp, key, oldValue, newValue);
+        } finally {
+            if (inOutStamp[0] != INVALID_STAMP) {
+                stampedLock.unlock(inOutStamp[0]); // Read- oder Write-Lock
+            }
+        }
+    }
+
+    /**
+     * Eine Implementation von {@link Map#replace(Object, Object, Object)} die nebenl&auml;fig
+     * aufgerufen werden kann.
+     * <p>
+     * Diese Methode wird intern von {@link WeakIdentityHashMap#replace(StampedLock, Object, Object, Object)}
+     * aufgerufen und erwartet das bei Aufruf bereits ein Read-Lock gesetzt ist.
+     * <p>
+     * Diese Methode ist optimiert f&uuml;r Situationen wo die Lese-Operationen im Verh&auml;ltnis
+     * zu den Schreib-Operationen h&auml;ufiger erfolgreich aufgerufen werden k&ouml;nnen.
+     * Wenn also &uuml;berwiegend zu dem angegebenen Schl&uuml;ssel sich in dieser Map bereits
+     * ein entsprechender Wert befindet.
+     *
+     * @param stampedLock der Lock mit dem die Schreib-/ Lese-Synchronisation erfolgt.
+     * @param inOutStamp  ein Array mit einem Lock-Stempel der bei Aufruf einen Read-Stempel enthalten
+     *                    muss und nach der R&uuml;ckkehr einen m&ouml;glicherweise neuen Lock-Stempel
+     *                    enth&auml;lt der anschliessend freigegeben werden muss.
+     * @param key         der Schl&uuml;ssel mit dem der Wert aus der Funktion zugeordnet werden soll.
+     * @param oldValue    der alte Wert der dem Schl&uuml;ssel bereits zugeordnet sein soll.
+     * @param newValue    der neue Wert die dem Schl&uuml;ssel zugeordnet werden soll wenn entweder
+     *                    der alte Wert {@code null} ist oder sich von dem neuen Wert unterscheidet.
+     * @return {@code true} wenn der alte Wert ersetzt wurde.
+     * @throws InterruptedException wenn der aktuelle Thread durch {@link Thread#interrupt()} unterbrochen
+     *                              wurde.
+     */
+    private boolean replace(final StampedLock stampedLock, final long[] inOutStamp, K key, V oldValue, V newValue) throws InterruptedException, TimeoutException {
+        V currValue = get(key);
+        if (!Objects.equals(currValue, oldValue) ||
+                (currValue == null && !containsKey(key))) {
+            return false;
+        } else {
+            int retry = 0;
+            while (true) {
+                final long writeStamp = stampedLock.tryConvertToWriteLock(inOutStamp[0]);
+                if (writeStamp != INVALID_STAMP) {
+                    inOutStamp[0] = writeStamp;
+                    put(key, newValue);
+                    return true;
+                } else if (retry++ >= RETRIES) {
+                    // Fallback: Die Konvertierung des Read-Locks zu einem
+                    // Write-Lock hat nicht funktioniert.
+                    long expectedModCount = modificationCount.get();
+                    // Werde daher einen exklusiven Write-Lock anfordern.
+                    // Dazu muss aber zuerst der Read-Lock freigegeben werden:
+                    stampedLock.unlockRead(inOutStamp[0]);
+                    // Hier entsteht eine Luecke und damit eine Race-Condition,
+                    // da nun kein Lock, weder Read- noch Write-Lock, gesetzt ist.
+                    inOutStamp[0] = tryWriteLock(stampedLock);
+                    // Der exklusive Write-Lock ist jetzt gesetzt. Jetzt muss
+                    // nachfolgend nochmal geprueft werden ob sich zwischenzeitlich
+                    // die Map veraendert hat:
+                    if ((expectedModCount != modificationCount.get())) {
+                        // Die Map hat sich zwischenzeitlich veraendert
+                        // und zu dem angegebenen Schluessel gibt es bereits
+                        // einen Wert:
+                        currValue = get(key);
+                        if (!Objects.equals(currValue, oldValue) ||
+                                (currValue == null && !containsKey(key))) {
+                            return false;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /**
      * @return the number of elements in this map.
      */
     @Override
@@ -521,6 +843,22 @@ public class WeakIdentityHashMap<K, V> extends AbstractMap<K, V> implements Map<
             this.bucketArray = rehash(newBucketArray);
             this.threshold = computeThreshold(newBucketArray.length);
         }
+    }
+
+    private long tryReadLock(final StampedLock stampedLock) throws InterruptedException, TimeoutException {
+        long readStamp = stampedLock.tryReadLock(30, TimeUnit.SECONDS);
+        if (readStamp == INVALID_STAMP) {
+            throw new TimeoutException("Unable to acquire a read lock within 30 seconds.");
+        }
+        return readStamp;
+    }
+
+    private long tryWriteLock(final StampedLock stampedLock) throws InterruptedException, TimeoutException {
+        long writeStamp = stampedLock.tryWriteLock(30, TimeUnit.SECONDS);
+        if (writeStamp == INVALID_STAMP) {
+            throw new TimeoutException("Unable to acquire a write lock within 30 seconds.");
+        }
+        return writeStamp;
     }
 
     /**

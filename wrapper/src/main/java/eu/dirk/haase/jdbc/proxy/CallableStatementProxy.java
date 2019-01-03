@@ -5,7 +5,6 @@ import eu.dirk.haase.jdbc.proxy.base.FactoryJdbcProxy;
 
 import java.sql.CallableStatement;
 import java.sql.Connection;
-import java.sql.SQLException;
 
 public abstract class CallableStatementProxy extends FactoryJdbcProxy<CallableStatement> implements CloseState {
 

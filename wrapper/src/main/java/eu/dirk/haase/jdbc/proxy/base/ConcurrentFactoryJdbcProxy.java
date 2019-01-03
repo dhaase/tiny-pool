@@ -6,6 +6,7 @@ import javax.sql.*;
 import javax.transaction.xa.XAResource;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.StampedLock;
 import java.util.function.BiFunction;
 
@@ -49,6 +50,8 @@ public abstract class ConcurrentFactoryJdbcProxy<T1> extends FactoryJdbcProxy<T1
             return (T2) identityMap.computeIfAbsent(stampedLock, delegate, (k) -> objectMaker.apply(delegate, argumentArray));
         } catch (InterruptedException ie) {
             throw new SQLException(ie.toString(), ie);
+        } catch (TimeoutException te) {
+            throw new SQLException(te.toString(), te);
         }
     }
 

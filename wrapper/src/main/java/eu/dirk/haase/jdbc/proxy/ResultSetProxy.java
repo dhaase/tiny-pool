@@ -4,7 +4,6 @@ import eu.dirk.haase.jdbc.proxy.base.CloseState;
 import eu.dirk.haase.jdbc.proxy.base.JdbcProxy;
 
 import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.sql.Statement;
 
 public abstract class ResultSetProxy extends JdbcProxy<ResultSet> implements CloseState {

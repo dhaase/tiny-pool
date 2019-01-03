@@ -13,11 +13,22 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.concurrent.locks.StampedLock;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.assertj.core.api.AssertionsForClassTypes.filter;
 
 @RunWith(BlockJUnit4ClassRunner.class)
 public class ReadWriteLockTest {
 
+
+    @Test
+    public void test() throws InterruptedException {
+        final StampedLock stampedLock = new StampedLock();
+        System.out.println("#1");
+        //long stamp1 = stampedLock.readLockInterruptibly();
+        System.out.println("#2");
+        long stamp2 = stampedLock.readLockInterruptibly();
+        System.out.println("#3");
+        long stamp3 = stampedLock.tryConvertToWriteLock(stamp2);
+        System.out.println("#4 " + stamp3);
+    }
 
     private void test_for_concurrent_modification(final boolean isConcurrentModificationExpected, final ExecutorService executorService, Constructor<Callable<Boolean>> constructor, final CountDownLatch countDownLatch) throws Exception {
         final long startNanos = System.nanoTime();
