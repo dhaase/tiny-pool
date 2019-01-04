@@ -31,7 +31,7 @@ import java.util.logging.Logger;
  * <li>und die Instanz-Variablen durch Wrapper die gew&uuml;nschten zus&auml;tzliche Funktionalit&auml;ten erhalten.</li>
  * </ul>
  *
- * @see DataSourceWrapper.Hybrid
+ * @see DataSourceWrapper.Hybrid#wrapConnectionPoolDataSourceHybrid(javax.sql.ConnectionPoolDataSource)
  * @see ConnectionPoolDataSource
  * @see DataSource
  */
@@ -120,6 +120,15 @@ public final class ConnectionPoolDataSourceHybrid extends AbstractDataSourceHybr
      * Damit ist es m&ouml;glich, neben den nativen Datenbank-Objekten, auch die Wrapper-Klassen
      * selbst abzufragen.
      * <p>
+     * Da es sich hier um ein Objekt handelt das mehrere Wrapper-Objekte enth&auml;hlt wird
+     * der Aufruf in folgender Reihenfolge abgearbeitet:
+     * <ol>
+     * <li>zuerst an das interne Wrapper-Objekt das das Interface
+     * {@link DataSource} implementiert.</li>
+     * <li>dann an das interne Wrapper-Objekt das das Interface
+     * {@link ConnectionPoolDataSource} implementiert.</li>
+     * </ol>
+     * <p>
      * Wenn als Argument Klassen angegeben werden, dann sollte (bei Objekten unbekannter Herkunft)
      * allerdings die Pr&uuml;ung zweistufig erfolgen um im Zweifel keinen Fehler auszul&ouml;sen:
      * <pre><code>
@@ -162,6 +171,16 @@ public final class ConnectionPoolDataSourceHybrid extends AbstractDataSourceHybr
      * Damit ist es m&ouml;glich, neben den nativen Datenbank-Objekten, auch die Wrapper-Klassen
      * selbst abzufragen.
      * <p>
+     * Da es sich hier um ein Objekt handelt das mehrere Wrapper-Objekte enth&auml;hlt wird
+     * der Aufruf in folgender Reihenfolge gepr&uuml;ft:
+     * <ol>
+     * <li>zuerst an das interne Wrapper-Objekt das das Interface
+     * {@link DataSource} implementiert.</li>
+     * <li>dann an das interne Wrapper-Objekt das das Interface
+     * {@link ConnectionPoolDataSource} implementiert.</li>
+     * </ol>
+     * Eventuelle Fehler werden wahrscheinlich mit dem letzten Aufruf ausgel&ouml;st.
+     * <p>
      * Wenn als Argument Klassen angegeben werden, dann sollte (bei Objekten unbekannter Herkunft)
      * allerdings die Pr&uuml;ung zweistufig erfolgen um im Zweifel keinen Fehler auszul&ouml;sen:
      * <pre><code>
@@ -180,8 +199,8 @@ public final class ConnectionPoolDataSourceHybrid extends AbstractDataSourceHybr
      * @return das Objekt entweder von der angegebenen Klasse
      * oder Interface abstammt oder direkt oder indirekt ein Wrapper ist f&uuml;r angegebenen
      * Klasse ist.
-     * @throws SQLException wird ausgel&ouml;st wenn die Pr&uuml;fung nicht durchgef&uuml;hrt
-     *                      werden kann.
+     * @throws SQLException wird ausgel&ouml;st wenn kein Objekt gefunden werden konnte das
+     *                      von der angegebenen Klasse oder Interface abstammt.
      */
     @Override
     public final <T2> T2 unwrap(Class<T2> iface) throws SQLException {

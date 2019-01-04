@@ -133,8 +133,8 @@ public abstract class JdbcProxy<T1> implements JdbcWrapper {
      * @return das Objekt entweder von der angegebenen Klasse
      * oder Interface abstammt oder direkt oder indirekt ein Wrapper ist f&uuml;r angegebenen
      * Klasse ist.
-     * @throws SQLException wird ausgel&ouml;st wenn die Pr&uuml;fung nicht durchgef&uuml;hrt
-     *                      werden kann.
+     * @throws SQLException wird ausgel&ouml;st wenn kein Objekt gefunden werden konnte das
+     *                      von der angegebenen Klasse oder Interface abstammt.
      */
     @Override
     public final <T2> T2 unwrap(Class<T2> iface) throws SQLException {
