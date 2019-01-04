@@ -373,17 +373,17 @@ public class WeakIdentityHashMap<K, V> extends AbstractMap<K, V> implements Map<
         if (currEntry == null) {
             purge();
             final int index = bucketIndex(keyHash(isEqualityByIdentity, key));
-            modificationCount.incrementAndGet();
-            ;
             entryCount++;
             if (entryCount > threshold) {
                 expandBucketArray(bucketArray.length);
             }
             final Entry<K, V> newEntry = createEntry(key, newValue, referenceQueue);
+            modificationCount.incrementAndGet();
             newEntry.setNext(bucketArray[index]);
             bucketArray[index] = newEntry;
             return null;
         } else {
+            modificationCount.incrementAndGet();
             return currEntry.setValue(newValue);
         }
     }

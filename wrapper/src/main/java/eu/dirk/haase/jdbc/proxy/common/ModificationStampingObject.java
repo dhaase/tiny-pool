@@ -66,15 +66,16 @@ public interface ModificationStampingObject {
      * Liefert bei jeder Zustandsver&auml;nderung einen neuen Stempel-Wert.
      * <p>
      * Jede interne Zustands&auml;nderung, die zu einer von Aussen erkennbaren
-     * Verhaltens&auml;nderung des Objektes f&uuml;hrt, muss in einem eindeutigen
-     * Stempel-Wert wiedergespiegelt werden.
+     * Verhaltens&auml;nderung des Objektes f&uuml;hrt, muss mit einem eindeutigen
+     * Stempel-Wert angezeigt werden.
      * <p>
      * Das bedeutet insbesondere, das sich kein Stempel-Wert wiederholen darf.
      * <p>
      * Andererseits bedeutet ver&auml;nderter Stempel-Wert nicht zwangsl&auml;ufig
-     * das sich der interne Zustand des Objektes genau dann ver&auml;ndert hat.
+     * das sich der interne Zustand des Objektes genau indem Zeitpunkt ver&auml;ndert
+     * hat.
      * Ein ver&auml;nderter Stempel-Wert zeigt daher nur an das eine &Auml;nderung
-     * des Objektes unmittelbar bevor steht.
+     * des Objektzustandes unmittelbar bevor steht.
      * Hintergrund f&uuml;r diese Einschr&auml;nkung ist:
      * Ohne diese Einschr&auml;nkung w&auml;re eine Implementation ohne den Einsatz
      * von Sperren unm&ouml;glich, da die Zustands&auml;nderung dann nur atomar
