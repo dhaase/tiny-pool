@@ -12,7 +12,7 @@ import java.util.concurrent.locks.StampedLock;
  * von Aussen nicht oder nur sehr Aufw&auml;ndig ermittelbar sind.
  * <p>
  * Da interne Zustands&auml;nderungen mit diesem Interface sehr leicht abfragbar
- * sind, ist es m&ouml;glich geworden fein granulare Sperren einzusetzen, wie zum
+ * sind, ist es m&ouml;glich fein granulare Sperren einzusetzen, wie zum
  * Beispiel optimistische Sperren (siehe {@link StampedLock}) oder Lese-/Schreib-Sperren
  * (siehe {@link ReentrantReadWriteLock}).
  * <p>
@@ -71,23 +71,25 @@ public interface ModificationStampingObject {
      * <p>
      * Das bedeutet insbesondere, das sich kein Stempel-Wert wiederholen darf.
      * <p>
-     * Andererseits bedeutet ver&auml;nderter Stempel-Wert nicht zwangsl&auml;ufig
+     * Andererseits bedeutet ver&auml;nderter Stempel-Wert nicht zwangsl&auml;ufig,
      * das sich der interne Zustand des Objektes genau indem Zeitpunkt ver&auml;ndert
      * hat.
-     * Ein ver&auml;nderter Stempel-Wert zeigt daher nur an das eine &Auml;nderung
+     * Ein ver&auml;nderter Stempel-Wert zeigt daher nur an, das eine &Auml;nderung
      * des Objektzustandes unmittelbar bevor steht.
+     * <p>
      * Hintergrund f&uuml;r diese Einschr&auml;nkung ist:
-     * Ohne diese Einschr&auml;nkung w&auml;re eine Implementation ohne den Einsatz
-     * von Sperren unm&ouml;glich, da die Zustands&auml;nderung dann nur atomar
-     * durchgef&uuml;hrt werden d&uuml;rfte.
+     * Ohne diese Einschr&auml;nkung w&auml;re eine Implementation nur mit dem Einsatz
+     * von Sperren m&ouml;glich, da Zustands&auml;nderungen dann nur atomar
+     * durchgef&uuml;hrt werden d&uuml;rften. Mit der Konsequenz das auch
+     * der Sinn dieses Interfaces konterkariert werden w&uuml;rde.
      * <p>
      * Zusammenfassend liefert der Stempel-Wert folgende Zusicherung:
      * <ul>
      * <li>bei einem <b>unver&auml;nderten</b> Stempel-Wert hat sich der Zustand
      * des Objektes nicht ver&auml;ndert.</li>
-     * <li>bei einem <b>ver&auml;nderten</b> Stempel-Wert steht eine
+     * <li>und bei einem <b>ver&auml;nderten</b> Stempel-Wert steht eine
      * Zustands&auml;nderung des Objektes unmittelbar bevor oder ist
-     * bereits geschehen.</li>
+     * bereits durchgef&uuml;hrt worden.</li>
      * </ul>
      * <p>
      * Der Stempel-Wert hat, abgesehen von seiner Eindeutigkeit, keine weitere
