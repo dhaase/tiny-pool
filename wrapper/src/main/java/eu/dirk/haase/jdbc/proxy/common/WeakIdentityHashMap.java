@@ -13,11 +13,8 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 /**
- * WeakIdentityHashMap is an implementation of IdentityHashMap with keys which are WeakReferences. A
- * key/value mapping is removed when the key is no longer referenced. All
- * optional operations (adding and removing) are supported. Keys and values can
- * be any objects. Note that the garbage collector acts similar to a second
- * thread on this collection, possibly removing keys.
+ * Diese {@link Map}-Implementation vereinigt die besonderen Eigenschaften einer
+ * {@link IdentityHashMap} mit den besonderen Eigenschaften einer {@link WeakHashMap}.
  *
  * @see java.util.IdentityHashMap
  * @see java.util.WeakHashMap
@@ -42,33 +39,14 @@ public class WeakIdentityHashMap<K, V> extends AbstractMap<K, V> implements Map<
     private int threshold;
     private transient Collection<V> valuesCollection;
 
-    /**
-     * Constructs a new empty {@code WeakIdentityHashMap} instance.
-     */
     public WeakIdentityHashMap() {
         this(DEFAULT_SIZE);
     }
 
-    /**
-     * Constructs a new {@code WeakIdentityHashMap} instance with the specified
-     * capacity.
-     *
-     * @param capacity the initial capacity of this map.
-     * @throws IllegalArgumentException if the capacity is less than zero.
-     */
     public WeakIdentityHashMap(int capacity) {
         this(capacity, DEFAULT_LOAD_FACTOR);
     }
 
-    /**
-     * Constructs a new {@code WeakIdentityHashMap} instance with the specified capacity
-     * and load factor.
-     *
-     * @param capacity   the initial capacity of this map.
-     * @param loadFactor the initial load factor.
-     * @throws IllegalArgumentException if the capacity is less than zero or the load factor is less
-     *                                  or equal to zero.
-     */
     public WeakIdentityHashMap(int capacity, double loadFactor) {
         if (capacity < 0) {
             throw new IllegalArgumentException("capacity < 0: " + capacity);
@@ -85,12 +63,6 @@ public class WeakIdentityHashMap<K, V> extends AbstractMap<K, V> implements Map<
         expandBucketArray(minBucketSize);
     }
 
-    /**
-     * Constructs a new {@code WeakIdentityHashMap} instance containing the mappings
-     * from the specified map.
-     *
-     * @param map the mappings to add.
-     */
     public WeakIdentityHashMap(Map<? extends K, ? extends V> map) {
         this(map.size());
         putAll(map);
@@ -115,12 +87,6 @@ public class WeakIdentityHashMap<K, V> extends AbstractMap<K, V> implements Map<
         return (hash > 0 ? (hash & 0x7FFFFFFF) % bucketArray.length : 0);
     }
 
-    /**
-     * Removes all mappings from this map, leaving it empty.
-     *
-     * @see #isEmpty()
-     * @see #size()
-     */
     @Override
     public void clear() {
         if (entryCount > 0) {
@@ -243,25 +209,11 @@ public class WeakIdentityHashMap<K, V> extends AbstractMap<K, V> implements Map<
         return false;
     }
 
-    /**
-     * Returns whether this map contains the specified key.
-     *
-     * @param keyObj the key to search for.
-     * @return {@code true} if this map contains the specified key,
-     * {@code false} otherwise.
-     */
     @Override
     public boolean containsKey(Object keyObj) {
         return getEntryOfKey(keyObj) != null;
     }
 
-    /**
-     * Returns whether this map contains the specified value.
-     *
-     * @param valueObj the value to search for.
-     * @return {@code true} if this map contains the specified value,
-     * {@code  false} otherwise.
-     */
     @Override
     public boolean containsValue(Object valueObj) {
         for (int i = bucketArray.length; --i >= 0; ) {
@@ -289,14 +241,6 @@ public class WeakIdentityHashMap<K, V> extends AbstractMap<K, V> implements Map<
         }
     }
 
-    /**
-     * Returns a set containing all of the mappings in this map. Each mapping is
-     * an instance of {@link Map.Entry}. As the set is backed by this map,
-     * changes in one will be reflected in the other. It does not support adding
-     * operations.
-     *
-     * @return a set of the mappings.
-     */
     @Override
     public Set<Map.Entry<K, V>> entrySet() {
         if (entrySet == null) {
@@ -311,13 +255,6 @@ public class WeakIdentityHashMap<K, V> extends AbstractMap<K, V> implements Map<
         this.threshold = computeThreshold(newBucketArray.length);
     }
 
-    /**
-     * Returns the value of the mapping with the specified key.
-     *
-     * @param key the key.
-     * @return the value of the mapping with the specified key, or {@code null}
-     * if no mapping for the specified key is found.
-     */
     @Override
     public V get(Object key) {
         Entry<K, V> entry = getEntryOfKey(key);
@@ -354,9 +291,6 @@ public class WeakIdentityHashMap<K, V> extends AbstractMap<K, V> implements Map<
         return reclaimedEntryCount;
     }
 
-    /**
-     * @return <code>true</code> if this map is empty. <code>false</code> otherwise.
-     */
     @Override
     public boolean isEmpty() {
         return size() == 0;
@@ -382,13 +316,6 @@ public class WeakIdentityHashMap<K, V> extends AbstractMap<K, V> implements Map<
         isSoftReference = softReference;
     }
 
-    /**
-     * Returns a set of the keys contained in this map. The set is backed by
-     * this map so changes to one are reflected by the other. The set does not
-     * support adding.
-     *
-     * @return a set of the keys.
-     */
     @Override
     public Set<K> keySet() {
         if (keySet == null) {
@@ -424,11 +351,6 @@ public class WeakIdentityHashMap<K, V> extends AbstractMap<K, V> implements Map<
         return this.concurrentMapFunktions.merge(stampedLock, key, value, remappingFunction);
     }
 
-    /**
-     * Liefert bei jeder Zustandsver&auml;nderung einen neuen Stempel-Wert.
-     *
-     * @return der neuen Stempel-Wert bei einer neuen Zustandsver&auml;nderung.
-     */
     @Override
     public long modificationStamp() {
         return modificationCount.get();
@@ -445,14 +367,6 @@ public class WeakIdentityHashMap<K, V> extends AbstractMap<K, V> implements Map<
         return reclaimedEntryCount;
     }
 
-    /**
-     * Maps the specified key to the specified value.
-     *
-     * @param key      the key.
-     * @param newValue the value.
-     * @return the value of any previous mapping with the specified key or
-     * {@code null} if there was no mapping.
-     */
     @Override
     public V put(K key, V newValue) {
         final Entry<K, V> currEntry = getEntryOfKey(key);
@@ -538,13 +452,6 @@ public class WeakIdentityHashMap<K, V> extends AbstractMap<K, V> implements Map<
         return this.concurrentMapFunktions.remove(stampedLock, key, value);
     }
 
-    /**
-     * Removes the mapping with the specified key from this map.
-     *
-     * @param keyToRemove the key of the mapping to remove.
-     * @return the value of the removed mapping or {@code null} if no mapping
-     * for the specified key was found.
-     */
     @Override
     public V remove(Object keyToRemove) {
         purge();
@@ -693,9 +600,6 @@ public class WeakIdentityHashMap<K, V> extends AbstractMap<K, V> implements Map<
         this.concurrentMapFunktions.replaceAll(stampedLock, remappingFunction);
     }
 
-    /**
-     * @return the number of elements in this map.
-     */
     @Override
     public int size() {
         return entryCount;
@@ -711,29 +615,6 @@ public class WeakIdentityHashMap<K, V> extends AbstractMap<K, V> implements Map<
         }
     }
 
-    /**
-     * <p>
-     * Returns a collection of the values contained in this map. The collection
-     * is backed by this map so changes to one are reflected by the other. The
-     * collection supports remove, removeAll, retainAll and clear operations,
-     * and it does not support add or addAll operations.
-     * </p>
-     * <p>
-     * This method returns a collection which is the subclass of
-     * AbstractCollection. The iterator method of this subclass returns a
-     * "wrapper object" over the iterator of map's entrySet(). The size method
-     * wraps the map's size method and the contains method wraps the map's
-     * containsValue method.
-     * </p>
-     * <p>
-     * The collection is created when this method is called at first time and
-     * returned in response to all subsequent calls. This method may return
-     * different Collection when multiple calls to this method, since it has no
-     * synchronization performed.
-     * </p>
-     *
-     * @return a collection of the values contained in this map.
-     */
     @Override
     public Collection<V> values() {
         if (valuesCollection == null) {

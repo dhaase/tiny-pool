@@ -1,8 +1,6 @@
 package eu.dirk.haase.jdbc.proxy.common;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -22,9 +20,10 @@ import java.util.function.Function;
  * eine {@link ConcurrentHashMap} einzusetzen.
  * <p>
  * Diese Methoden sind insbesondere f&uuml;r spezielle
- * {@link Map}-Implementationen geeignet, f&uuml;r die es keine
- * Implementationen f&uuml;r nebenl&auml;ufige ausgef&uuml;hrt werden
- * k&ouml;nnen.
+ * {@link Map}-Implementationen gedacht (zum Beispiel
+ * {@link IdentityHashMap} oder {@link WeakHashMap}), f&uuml;r
+ * die es keine Implementationen gibt, die nebenl&auml;ufig
+ * ausgef&uuml;hrt werden k&ouml;nnen.
  *
  * @param <M> der generische Typ einer Map die gleichzeitig auch das Interface
  *            {@link ModificationStampingObject} implementiert.
@@ -451,37 +450,38 @@ public class ConcurrentMapFunktions<M extends Map<K, V> & ModificationStampingOb
         // Zuerst eine Pruefung ob ein Schreib-Zugriff notwendig ist:
         if (!Objects.equals(currValue, value) || (currValue == null && !delegate.containsKey(key))) {
             return false;
-        }
-        int retry = 0;
-        while (true) {
-            final long writeStamp = stampedLock.tryConvertToWriteLock(inOutStamp[0]);
-            if (writeStamp != INVALID_STAMP) {
-                inOutStamp[0] = writeStamp;
-                delegate.remove(key);
-                return true;
-            } else if (retry++ >= RETRIES) {
-                // Fallback: Die Konvertierung der Lese-Sperre zu einer
-                // Schreib-Sperre hat nicht funktioniert.
-                long expectedModStamp = delegate.modificationStamp();
-                // Werde daher einen exklusiven Schreib-Sperre anfordern.
-                // Dazu muss aber zuerst die Lese-Sperre freigegeben werden:
-                stampedLock.unlockRead(inOutStamp[0]);
-                // Hier entsteht eine Luecke und damit eine Race-Condition,
-                // da nun keine Sperre, weder Lese- noch Schreib-Sperre, gesetzt
-                // ist.
-                inOutStamp[0] = tryWriteLock(stampedLock);
-                // Die exklusive Schreib-Sperre ist jetzt gesetzt. Jetzt muss
-                // nachfolgend nochmal geprueft werden ob sich zwischenzeitlich
-                // die Map veraendert hat (wegen der Race-Condition, siehe oben):
-                if ((expectedModStamp != delegate.modificationStamp())) {
-                    // Die Map hat sich zwischenzeitlich veraendert
-                    // und zu dem angegebenen Schluessel gibt es bereits
-                    // einen Wert:
-                    currValue = delegate.get(key);
-                    // Daher wird die Pruefung hier wiederholt (identisch
-                    // mit der Eingangs-Pruefung):
-                    if (!Objects.equals(currValue, value) || (currValue == null && !delegate.containsKey(key))) {
-                        return false;
+        } else {
+            int retry = 0;
+            while (true) {
+                final long writeStamp = stampedLock.tryConvertToWriteLock(inOutStamp[0]);
+                if (writeStamp != INVALID_STAMP) {
+                    inOutStamp[0] = writeStamp;
+                    delegate.remove(key);
+                    return true;
+                } else if (retry++ >= RETRIES) {
+                    // Fallback: Die Konvertierung der Lese-Sperre zu einer
+                    // Schreib-Sperre hat nicht funktioniert.
+                    long expectedModStamp = delegate.modificationStamp();
+                    // Werde daher einen exklusiven Schreib-Sperre anfordern.
+                    // Dazu muss aber zuerst die Lese-Sperre freigegeben werden:
+                    stampedLock.unlockRead(inOutStamp[0]);
+                    // Hier entsteht eine Luecke und damit eine Race-Condition,
+                    // da nun keine Sperre, weder Lese- noch Schreib-Sperre, gesetzt
+                    // ist.
+                    inOutStamp[0] = tryWriteLock(stampedLock);
+                    // Die exklusive Schreib-Sperre ist jetzt gesetzt. Jetzt muss
+                    // nachfolgend nochmal geprueft werden ob sich zwischenzeitlich
+                    // die Map veraendert hat (wegen der Race-Condition, siehe oben):
+                    if ((expectedModStamp != delegate.modificationStamp())) {
+                        // Die Map hat sich zwischenzeitlich veraendert
+                        // und zu dem angegebenen Schluessel gibt es bereits
+                        // einen Wert:
+                        currValue = delegate.get(key);
+                        // Daher wird die Pruefung hier wiederholt (identisch
+                        // mit der Eingangs-Pruefung):
+                        if (!Objects.equals(currValue, value) || (currValue == null && !delegate.containsKey(key))) {
+                            return false;
+                        }
                     }
                 }
             }
@@ -719,16 +719,17 @@ public class ConcurrentMapFunktions<M extends Map<K, V> & ModificationStampingOb
                     }
                 }
 
-                // Maskiert die checked Exceptions
                 boolean replace(final StampedLock stampedLock, final long[] inOutStamp, K key, V oldValue, V newValue) {
                     try {
                         return ConcurrentMapFunktions.this.replace(stampedLock, inOutStamp, key, oldValue, newValue);
                     } catch (InterruptedException | TimeoutException ex) {
+                        // Maskiert die Checked-Exceptions in eine Runtime-Exception
                         throw new IllegalStateException(ex);
                     }
                 }
             });
         } catch (IllegalStateException ise) {
+            // Die maskierte Checked-Exceptions wird wieder offengelegt:
             final Throwable cause = ise.getCause();
             if (cause instanceof InterruptedException) {
                 throw ((InterruptedException) cause);

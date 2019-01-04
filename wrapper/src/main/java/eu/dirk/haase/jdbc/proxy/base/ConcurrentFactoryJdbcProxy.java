@@ -16,7 +16,7 @@ import java.util.function.BiFunction;
  * und die (auch) nebenl&auml;fig aufgerufen werden k&ouml;nnen.
  * <p>
  * Zu den JDBC-Klassen mit Factory-Methoden, die nebenl&auml;fig aufgerufen
- * werden k&ouml;nnen, geh&ouml;ren alle Klasse die nicht mittelbar oder
+ * werden k&ouml;nnen, dazu geh&ouml;ren alle Klassen die nicht mittelbar oder
  * unmittelbar mit einer {@link Connection}-Instanz verbunden sind:
  * <ol>
  * <li>{@link ConnectionPoolDataSource}</li>
@@ -48,10 +48,8 @@ public abstract class ConcurrentFactoryJdbcProxy<T1> extends FactoryJdbcProxy<T1
     protected final <T2> T2 wrapConcurrent(T2 delegate, BiFunction<T2, Object[], T2> objectMaker, final Object... argumentArray) throws SQLException {
         try {
             return (T2) identityMap.computeIfAbsent(stampedLock, delegate, (k) -> objectMaker.apply(delegate, argumentArray));
-        } catch (InterruptedException ie) {
-            throw new SQLException(ie.toString(), ie);
-        } catch (TimeoutException te) {
-            throw new SQLException(te.toString(), te);
+        } catch (InterruptedException | TimeoutException ex) {
+            throw new SQLException(ex.toString(), ex);
         }
     }
 
