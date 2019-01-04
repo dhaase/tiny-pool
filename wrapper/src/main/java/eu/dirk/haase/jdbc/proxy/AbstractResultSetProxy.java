@@ -6,12 +6,12 @@ import eu.dirk.haase.jdbc.proxy.base.JdbcProxy;
 import java.sql.ResultSet;
 import java.sql.Statement;
 
-public abstract class ResultSetProxy extends JdbcProxy<ResultSet> implements CloseState {
+public abstract class AbstractResultSetProxy extends JdbcProxy<ResultSet> implements CloseState {
 
     private final ResultSet delegate;
     private final Statement statement;
 
-    protected ResultSetProxy(final ResultSet delegate, final Statement statement, final Object[] argumentArray) {
+    protected AbstractResultSetProxy(final ResultSet delegate, final Statement statement, final Object[] argumentArray) {
         super(delegate);
         this.statement = statement;
         this.delegate = delegate;

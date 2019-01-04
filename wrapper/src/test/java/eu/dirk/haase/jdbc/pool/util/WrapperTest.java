@@ -25,9 +25,9 @@ public class WrapperTest {
     @Before
     public void setUp() throws Exception {
         JavassistProxyFactory.main();
-        interfaceToClassMap.put(DataSource.class, "eu.dirk.haase.jdbc.proxy.WDataSourceProxy");
-        interfaceToClassMap.put(XADataSource.class, "eu.dirk.haase.jdbc.proxy.WXADataSourceProxy");
-        interfaceToClassMap.put(ConnectionPoolDataSource.class, "eu.dirk.haase.jdbc.proxy.WConnectionPoolDataSourceProxy");
+        interfaceToClassMap.put(DataSource.class, "eu.dirk.haase.jdbc.proxy.WAbstractDataSourceProxy");
+        interfaceToClassMap.put(XADataSource.class, "eu.dirk.haase.jdbc.proxy.WAbstractXADataSourceProxy");
+        interfaceToClassMap.put(ConnectionPoolDataSource.class, "eu.dirk.haase.jdbc.proxy.WAbstractConnectionPoolDataSourceProxy");
     }
 
     @Test
@@ -66,10 +66,6 @@ public class WrapperTest {
         Connection connection1_a = dataSource_a.getConnection();
         Connection connection2_a = dataSource_a.getConnection();
         assertThat(connection1_a).isSameAs(connection2_a);
-//        DataSource dataSource_b = dsw.wrapDataSource(dataSource_a);
-//        Connection connection1_b = dataSource_b.getConnection();
-//        Connection connection2_b = dataSource_b.getConnection();
-//        assertThat(connection1_b).isSameAs(connection2_b);
     }
 
 }

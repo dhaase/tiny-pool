@@ -10,8 +10,9 @@ import java.util.function.Function;
 
 public class JavassistProxyClassGenerator {
 
-    private final Set<String> allFieldSet = new HashSet<>();
-    private final Set<String> allMethodSet = new HashSet<>();
+    private final Set<String> allFieldSet;
+    private final Set<String> allInitFieldSet;
+    private final Set<String> allMethodSet;
     private final Function<String, String> delegateMethodBody;
     private final boolean isWrapMethodConcurrent;
     private final String newClassName;
@@ -27,6 +28,9 @@ public class JavassistProxyClassGenerator {
         this.primaryIfaceClass = primaryIfaceClass;
         this.superClass = superClass;
         this.isWrapMethodConcurrent = isWrapMethodConcurrent;
+        this.allInitFieldSet = new HashSet<>();
+        this.allFieldSet = new HashSet<>();
+        this.allMethodSet = new HashSet<>();
     }
 
     private <T> void addAPIMethods(final CtClass targetCt, final Class<T> primaryInterface, final CtClass superCt, final Map<String, CtClass> childs) throws NotFoundException, CannotCompileException {
@@ -90,7 +94,9 @@ public class JavassistProxyClassGenerator {
             // fuege das BiFunction-Field mit Initialisierung als Factory-Function hinzu:
             final String objectMakerFieldName = "new" + ifaceParentCt.getSimpleName();
             addField(targetCt, factoryCt, objectMakerFieldName);
-            targetConstructorCt.insertAfter(objectMakerFieldName + " = new ObjectMaker(" + child.getName() + ".class, $1);");
+            if (allInitFieldSet.add(objectMakerFieldName)) {
+                targetConstructorCt.insertAfter(objectMakerFieldName + " = new ObjectMaker(" + child.getName() + ".class, $1);");
+            }
             // fuege die Wrap-Methode hinzu:
             CtClass[] wrapParameter = {ifaceParentCt, classPool.getCtClass(Object[].class.getName())};
             final String wrapMethodName = "wrap" + ifaceParentCt.getSimpleName();
@@ -119,7 +125,7 @@ public class JavassistProxyClassGenerator {
     }
 
     public <T> CtClass generate(final ClassPool classPool, final Class<?> parentIfaceClass, final Map<String, CtClass> childs) throws Exception {
-        this.classPool = classPool;
+        init(classPool);
 
         final CtClass parentIfCt = (parentIfaceClass != null ? classPool.getCtClass(parentIfaceClass.getName()) : null);
         final CtClass superCt = classPool.getCtClass(superClass.getName());
@@ -145,6 +151,13 @@ public class JavassistProxyClassGenerator {
         // Daher muss der Methoden-Name noch hinzugefuegt
         // werden:
         return intfMethod.getName() + intfMethod.getSignature();
+    }
+
+    private void init(ClassPool classPool) {
+        this.classPool = classPool;
+        this.allInitFieldSet.clear();
+        this.allFieldSet.clear();
+        this.allMethodSet.clear();
     }
 
 

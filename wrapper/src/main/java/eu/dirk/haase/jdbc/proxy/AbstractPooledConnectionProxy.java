@@ -6,12 +6,13 @@ import eu.dirk.haase.jdbc.proxy.common.WeakIdentityHashMap;
 
 import javax.sql.ConnectionPoolDataSource;
 import javax.sql.PooledConnection;
+import java.sql.Connection;
 
-public abstract class PooledConnectionProxy extends ConcurrentFactoryJdbcProxy<WeakIdentityHashMap<Object, Object>, PooledConnection> implements ValidState {
+public abstract class AbstractPooledConnectionProxy extends ConcurrentFactoryJdbcProxy<WeakIdentityHashMap<Object, Object>, PooledConnection> implements ValidState {
 
     private final ConnectionPoolDataSource connectionPoolDataSource;
 
-    protected PooledConnectionProxy(final PooledConnection delegate, final ConnectionPoolDataSource dataSource, final Object[] argumentArray) {
+    protected AbstractPooledConnectionProxy(final PooledConnection delegate, final ConnectionPoolDataSource dataSource, final Object[] argumentArray) {
         super(delegate);
         this.connectionPoolDataSource = dataSource;
     }
@@ -19,5 +20,7 @@ public abstract class PooledConnectionProxy extends ConcurrentFactoryJdbcProxy<W
     public final ConnectionPoolDataSource getConnectionPoolDataSource() {
         return connectionPoolDataSource;
     }
+
+    protected abstract Connection wrapConnection(Connection delegate, Object... argumentArray);
 
 }

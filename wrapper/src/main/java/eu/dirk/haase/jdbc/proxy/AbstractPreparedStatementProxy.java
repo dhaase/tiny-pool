@@ -5,13 +5,14 @@ import eu.dirk.haase.jdbc.proxy.base.FactoryJdbcProxy;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 
-public abstract class PreparedStatementProxy extends FactoryJdbcProxy<PreparedStatement> implements CloseState {
+public abstract class AbstractPreparedStatementProxy extends FactoryJdbcProxy<PreparedStatement> implements CloseState {
 
     private final Connection connection;
     private final PreparedStatement delegate;
 
-    protected PreparedStatementProxy(PreparedStatement delegate, Connection connection, final Object[] argumentArray) {
+    protected AbstractPreparedStatementProxy(PreparedStatement delegate, Connection connection, final Object[] argumentArray) {
         super(delegate);
         this.connection = connection;
         this.delegate = delegate;
@@ -21,5 +22,6 @@ public abstract class PreparedStatementProxy extends FactoryJdbcProxy<PreparedSt
         return connection;
     }
 
+    protected abstract ResultSet wrapResultSet(ResultSet delegate, Object... argumentArray);
 
 }

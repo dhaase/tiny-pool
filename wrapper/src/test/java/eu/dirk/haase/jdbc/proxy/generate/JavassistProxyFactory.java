@@ -28,17 +28,17 @@ public final class JavassistProxyFactory {
     public static void main(final String... args) throws Exception {
         final Map<Class<?>, Class<?>> iface2ClassMap = new HashMap<>();
 
-        iface2ClassMap.put(ResultSet.class, ResultSetProxy.class);
-        iface2ClassMap.put(CallableStatement.class, CallableStatementProxy.class);
-        iface2ClassMap.put(PreparedStatement.class, PreparedStatementProxy.class);
-        iface2ClassMap.put(Statement.class, StatementProxy.class);
-        iface2ClassMap.put(Connection.class, ConnectionProxy.class);
-        iface2ClassMap.put(DataSource.class, DataSourceProxy.class);
-        iface2ClassMap.put(XAResource.class, XAResourceProxy.class);
-        iface2ClassMap.put(XAConnection.class, XAConnectionProxy.class);
-        iface2ClassMap.put(XADataSource.class, XADataSourceProxy.class);
-        iface2ClassMap.put(PooledConnection.class, PooledConnectionProxy.class);
-        iface2ClassMap.put(ConnectionPoolDataSource.class, ConnectionPoolDataSourceProxy.class);
+        iface2ClassMap.put(ResultSet.class, AbstractResultSetProxy.class);
+        iface2ClassMap.put(CallableStatement.class, AbstractCallableStatementProxy.class);
+        iface2ClassMap.put(PreparedStatement.class, AbstractPreparedStatementProxy.class);
+        iface2ClassMap.put(Statement.class, AbstractStatementProxy.class);
+        iface2ClassMap.put(Connection.class, AbstractConnectionProxy.class);
+        iface2ClassMap.put(DataSource.class, AbstractDataSourceProxy.class);
+        iface2ClassMap.put(XAResource.class, AbstractXAResourceProxy.class);
+        iface2ClassMap.put(XAConnection.class, AbstractXAConnectionProxy.class);
+        iface2ClassMap.put(XADataSource.class, AbstractXADataSourceProxy.class);
+        iface2ClassMap.put(PooledConnection.class, AbstractPooledConnectionProxy.class);
+        iface2ClassMap.put(ConnectionPoolDataSource.class, AbstractConnectionPoolDataSourceProxy.class);
 
         final JavassistProxyFactory f = new JavassistProxyFactory();
         f.javassistProxyClasses = new JavassistProxyClasses(CLASS_NAME_FUN, iface2ClassMap);

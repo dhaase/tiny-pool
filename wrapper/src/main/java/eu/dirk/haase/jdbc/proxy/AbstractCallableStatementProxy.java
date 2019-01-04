@@ -5,13 +5,14 @@ import eu.dirk.haase.jdbc.proxy.base.FactoryJdbcProxy;
 
 import java.sql.CallableStatement;
 import java.sql.Connection;
+import java.sql.ResultSet;
 
-public abstract class CallableStatementProxy extends FactoryJdbcProxy<CallableStatement> implements CloseState {
+public abstract class AbstractCallableStatementProxy extends FactoryJdbcProxy<CallableStatement> implements CloseState {
 
     private final Connection connection;
     private final CallableStatement delegate;
 
-    protected CallableStatementProxy(CallableStatement delegate, Connection connection, final Object[] argumentArray) {
+    protected AbstractCallableStatementProxy(CallableStatement delegate, Connection connection, final Object[] argumentArray) {
         super(delegate);
         this.connection = connection;
         this.delegate = delegate;
@@ -20,5 +21,7 @@ public abstract class CallableStatementProxy extends FactoryJdbcProxy<CallableSt
     public final Connection getConnection() {
         return connection;
     }
+
+    protected abstract ResultSet wrapResultSet(ResultSet delegate, Object... argumentArray);
 
 }
