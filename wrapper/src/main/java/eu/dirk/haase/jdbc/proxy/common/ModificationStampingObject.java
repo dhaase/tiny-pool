@@ -16,6 +16,9 @@ import java.util.concurrent.locks.StampedLock;
  * Beispiel optimistische Sperren (siehe {@link StampedLock}) oder Lese-/Schreib-Sperren
  * (siehe {@link ReentrantReadWriteLock}).
  * <p>
+ * Zur genauen Semantik des Stempel-Wertes siehe die Beschreibung von der Methode
+ * {@link #modificationStamp()}.
+ * <p>
  * Zum besseren Verst&auml;ndnis welchen Nutzen dieses Interface bietet,
  * hier ein typischer Algorithmus an Hand einer hypothetischen Methode:
  * <pre><code>
@@ -68,12 +71,30 @@ public interface ModificationStampingObject {
      * <p>
      * Das bedeutet insbesondere, das sich kein Stempel-Wert wiederholen darf.
      * <p>
-     * Der Stempel-Wert hat abgesehen von seiner Eindeutigkeit keine weiteren
+     * Andererseits bedeutet ver&auml;nderter Stempel-Wert nicht zwangsl&auml;ufig
+     * das sich der interne Zustand des Objektes genau dann ver&auml;ndert hat.
+     * Ein ver&auml;nderter Stempel-Wert zeigt daher nur an das eine &Auml;nderung
+     * des Objektes unmittelbar bevor steht.
+     * Hintergrund f&uuml;r diese Einschr&auml;nkung ist:
+     * Ohne diese Einschr&auml;nkung w&auml;re eine Implementation ohne den Einsatz
+     * von Sperren unm&ouml;glich, da die Zustands&auml;nderung dann nur atomar
+     * durchgef&uuml;hrt werden d&uuml;rfte.
+     * <p>
+     * Zusammenfassend liefert der Stempel-Wert folgende Zusicherung:
+     * <ul>
+     * <li>bei einem <b>unver&auml;nderten</b> Stempel-Wert hat sich der Zustand
+     * des Objektes nicht ver&auml;ndert.</li>
+     * <li>bei einem <b>ver&auml;nderten</b> Stempel-Wert steht eine
+     * Zustands&auml;nderung des Objektes unmittelbar bevor oder ist
+     * bereits geschehen.</li>
+     * </ul>
+     * <p>
+     * Der Stempel-Wert hat, abgesehen von seiner Eindeutigkeit, keine weitere
      * Eigenschaften. Auch wenn der Stempel-Wert intern meist dadurch gebildet
-     * wird indem er monoton inkrementiert wird, darf dem Stempel-Wert keine
-     * weitere Bedeutungen zugewiesen werden. Es k&ouml;nnen daher auch keine
-     * weiteren Aussagen, wie zum Beispiel zeitliche Abfolgen - vorher / nachher,
-     * aus dem Stempel-Wert abgelesen werden.
+     * wird, indem er monoton inkrementiert wird, darf daraus dem Stempel-Wert
+     * keine weitere Bedeutungen zugewiesen werden. Es k&ouml;nnen daher auch
+     * keine weiteren Aussagen, wie zum Beispiel zeitliche Abfolgen -
+     * vorher / nachher, aus dem Stempel-Wert abgelesen werden.
      *
      * @return ein neuer Stempel-Wert bei einer neuen Zustands&auml;nderung.
      */

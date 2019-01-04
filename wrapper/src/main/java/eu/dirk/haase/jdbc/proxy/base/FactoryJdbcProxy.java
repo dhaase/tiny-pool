@@ -44,7 +44,7 @@ public abstract class FactoryJdbcProxy<T1> extends JdbcProxy<T1> {
         this.identityMap = identityMap;
     }
 
-    public final Map<Object, Object> getIdentityMap() {
+    public final Map<Object, Object> cacheMap() {
         return identityMap;
     }
 

@@ -1,11 +1,14 @@
 package eu.dirk.haase.jdbc.proxy.base;
 
+import eu.dirk.haase.jdbc.proxy.common.ConcurrentMapFunktions;
+import eu.dirk.haase.jdbc.proxy.common.ModificationStampingObject;
 import eu.dirk.haase.jdbc.proxy.common.WeakIdentityHashMap;
 
 import javax.sql.*;
 import javax.transaction.xa.XAResource;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.Map;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.StampedLock;
 import java.util.function.BiFunction;
@@ -27,30 +30,36 @@ import java.util.function.BiFunction;
  * <li>{@link XAResource}</li>
  * </ol>
  *
+ * @param <M>  der generische Typ einer Map die gleichzeitig auch das Interface
+ *             {@link ModificationStampingObject} implementiert.
  * @param <T1> der Typ der jeweiligen abgeleiteten JDBC-Klasse.
  */
-public abstract class ConcurrentFactoryJdbcProxy<T1> extends FactoryJdbcProxy<T1> {
+public abstract class ConcurrentFactoryJdbcProxy<M extends Map<Object, Object> & ModificationStampingObject, T1> extends FactoryJdbcProxy<T1> {
 
-    private final WeakIdentityHashMap<Object, Object> identityMap;
+    private final ConcurrentMapFunktions<M, Object, Object> concurrentMapFunktions;
     private final StampedLock stampedLock;
 
+    @SuppressWarnings("unchecked")
     protected ConcurrentFactoryJdbcProxy(T1 delegate) {
-        this(delegate, new WeakIdentityHashMap<>(), new StampedLock());
+        this(delegate, (M) new WeakIdentityHashMap<>(), new StampedLock());
     }
 
-    private ConcurrentFactoryJdbcProxy(T1 delegate, final WeakIdentityHashMap<Object, Object> identityMap, final StampedLock stampedLock) {
+    private ConcurrentFactoryJdbcProxy(T1 delegate, final M identityMap, final StampedLock stampedLock) {
         super(delegate, identityMap);
-        this.identityMap = identityMap;
         this.stampedLock = stampedLock;
+        this.concurrentMapFunktions = new ConcurrentMapFunktions<>(identityMap);
     }
 
     @SuppressWarnings("unchecked")
     protected final <T2> T2 wrapConcurrent(T2 delegate, BiFunction<T2, Object[], T2> objectMaker, final Object... argumentArray) throws SQLException {
         try {
-            return (T2) identityMap.computeIfAbsent(stampedLock, delegate, (k) -> objectMaker.apply(delegate, argumentArray));
+            return (T2) this.concurrentMapFunktions.computeIfAbsent(stampedLock, delegate, (k) -> objectMaker.apply(delegate, argumentArray));
         } catch (InterruptedException | TimeoutException ex) {
             throw new SQLException(ex.toString(), ex);
         }
     }
 
+    public boolean isValid(int timeoutSeconds) throws SQLException {
+        return true;
+    }
 }
