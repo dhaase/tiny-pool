@@ -354,6 +354,7 @@ public class ConcurrentMapFunktions<M extends Map<K, V> & ModificationStampingOb
      */
     private V putIfAbsent(final StampedLock stampedLock, final long[] inOutStamp, K key, V newValue) throws InterruptedException, TimeoutException {
         V currValue = delegate.get(key);
+        // Zuerst eine Pruefung ob ein Schreib-Zugriff notwendig ist:
         if (currValue == null) {
             int retry = 0;
             while (true) {
@@ -375,11 +376,14 @@ public class ConcurrentMapFunktions<M extends Map<K, V> & ModificationStampingOb
                     // Die exklusive Schreib-Sperre ist jetzt gesetzt. Jetzt muss
                     // nachfolgend nochmal geprueft werden ob sich zwischenzeitlich
                     // die Map veraendert hat (wegen der Race-Condition, siehe oben):
-                    if ((expectedModStamp != delegate.modificationStamp()) && ((currValue = delegate.get(key)) != null)) {
-                        // Die Map hat sich zwischenzeitlich veraendert
-                        // und zu dem angegebenen Schluessel gibt es bereits
-                        // einen Wert:
-                        return currValue;
+                    if (expectedModStamp != delegate.modificationStamp()) {
+                        // Die Map hat sich zwischenzeitlich veraendert.
+                        currValue = delegate.get(key);
+                        // Daher wird die Pruefung hier wiederholt (identisch
+                        // mit der Eingangs-Pruefung):
+                        if (currValue != null) {
+                            return currValue;
+                        }
                     }
                 }
             }
@@ -443,9 +447,9 @@ public class ConcurrentMapFunktions<M extends Map<K, V> & ModificationStampingOb
      * @throws TimeoutException     der Lock konnte nicht rechtzeitig in vorgegebener Zeit angefordert werden.
      */
     private boolean remove(final StampedLock stampedLock, final long[] inOutStamp, final Object key, final Object value) throws InterruptedException, TimeoutException {
-        Object currValue = delegate.get(key);
-        if (!Objects.equals(currValue, value) ||
-                (currValue == null && !delegate.containsKey(key))) {
+        V currValue = delegate.get(key);
+        // Zuerst eine Pruefung ob ein Schreib-Zugriff notwendig ist:
+        if (!Objects.equals(currValue, value) || (currValue == null && !delegate.containsKey(key))) {
             return false;
         }
         int retry = 0;
@@ -474,8 +478,9 @@ public class ConcurrentMapFunktions<M extends Map<K, V> & ModificationStampingOb
                     // und zu dem angegebenen Schluessel gibt es bereits
                     // einen Wert:
                     currValue = delegate.get(key);
-                    if (!Objects.equals(currValue, value) ||
-                            (currValue == null && !delegate.containsKey(key))) {
+                    // Daher wird die Pruefung hier wiederholt (identisch
+                    // mit der Eingangs-Pruefung):
+                    if (!Objects.equals(currValue, value) || (currValue == null && !delegate.containsKey(key))) {
                         return false;
                     }
                 }
@@ -577,6 +582,7 @@ public class ConcurrentMapFunktions<M extends Map<K, V> & ModificationStampingOb
      */
     private boolean replace(final StampedLock stampedLock, final long[] inOutStamp, K key, V oldValue, V newValue) throws InterruptedException, TimeoutException {
         V currValue = delegate.get(key);
+        // Zuerst eine Pruefung ob ein Schreib-Zugriff notwendig ist:
         if (!Objects.equals(currValue, oldValue) ||
                 (currValue == null && !delegate.containsKey(key))) {
             return false;
@@ -603,12 +609,11 @@ public class ConcurrentMapFunktions<M extends Map<K, V> & ModificationStampingOb
                     // nachfolgend nochmal geprueft werden ob sich zwischenzeitlich
                     // die Map veraendert hat (wegen der Race-Condition, siehe oben):
                     if ((expectedModStamp != delegate.modificationStamp())) {
-                        // Die Map hat sich zwischenzeitlich veraendert
-                        // und zu dem angegebenen Schluessel gibt es bereits
-                        // einen Wert:
+                        // Die Map hat sich zwischenzeitlich veraendert.
                         currValue = delegate.get(key);
-                        if (!Objects.equals(currValue, oldValue) ||
-                                (currValue == null && !delegate.containsKey(key))) {
+                        // Daher wird die Pruefung hier wiederholt (identisch
+                        // mit der Eingangs-Pruefung):
+                        if (!Objects.equals(currValue, oldValue) || (currValue == null && !delegate.containsKey(key))) {
                             return false;
                         }
                     }
@@ -643,6 +648,7 @@ public class ConcurrentMapFunktions<M extends Map<K, V> & ModificationStampingOb
      */
     private V replace(final StampedLock stampedLock, final long[] inOutStamp, K key, V newValue) throws InterruptedException, TimeoutException {
         V currValue = delegate.get(key);
+        // Zuerst eine Pruefung ob ein Schreib-Zugriff notwendig ist:
         if (currValue == null && !delegate.containsKey(key)) {
             return null;
         } else {
@@ -667,10 +673,10 @@ public class ConcurrentMapFunktions<M extends Map<K, V> & ModificationStampingOb
                     // nachfolgend nochmal geprueft werden ob sich zwischenzeitlich
                     // die Map veraendert hat (wegen der Race-Condition, siehe oben):
                     if ((expectedModStamp != delegate.modificationStamp())) {
-                        // Die Map hat sich zwischenzeitlich veraendert
-                        // und zu dem angegebenen Schluessel gibt es bereits
-                        // einen Wert:
+                        // Die Map hat sich zwischenzeitlich veraendert.
                         currValue = delegate.get(key);
+                        // Daher wird die Pruefung hier wiederholt (identisch
+                        // mit der Eingangs-Pruefung):
                         if (currValue == null && !delegate.containsKey(key)) {
                             return null;
                         }
