@@ -1,5 +1,6 @@
 package eu.dirk.haase.jdbc.proxy.factory;
 
+import eu.dirk.haase.jdbc.proxy.base.JdbcWrapper;
 import eu.dirk.haase.jdbc.proxy.hybrid.ConnectionPoolDataSourceHybrid;
 import eu.dirk.haase.jdbc.proxy.hybrid.ConnectionPoolXADataSourceHybrid;
 import eu.dirk.haase.jdbc.proxy.hybrid.XADataSourceHybrid;
@@ -9,11 +10,12 @@ import javax.sql.DataSource;
 import javax.sql.XADataSource;
 import java.io.Serializable;
 import java.lang.reflect.Constructor;
+import java.sql.SQLException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-public class DataSourceWrapper implements Serializable {
+public final class DataSourceWrapper implements Serializable {
 
     private final Map<Class<?>, Object> interfaceToClassMap;
 
@@ -28,6 +30,14 @@ public class DataSourceWrapper implements Serializable {
         this.connectionPoolDataSourceConstructor = getConnectionPoolDataSourceConstructor(null);
     }
 
+    private void ensureOnlyWrappingOnce(Object delegate, Object wrapper) throws SQLException {
+        if (delegate instanceof JdbcWrapper) {
+            if (((JdbcWrapper) delegate).isWrapperFor(wrapper.getClass())) {
+                throw new IllegalArgumentException("Can not wrap twice: " + wrapper.getClass());
+            }
+        }
+    }
+
     private Constructor<ConnectionPoolDataSource> getConnectionPoolDataSourceConstructor(Class<?> delegateClass) throws ClassNotFoundException {
         final Class<ConnectionPoolDataSource> ifaceClass = ConnectionPoolDataSource.class;
         if (interfaceToClassMap.containsKey(ifaceClass)) {
@@ -38,7 +48,7 @@ public class DataSourceWrapper implements Serializable {
                 }
                 return connectionPoolDataSourceConstructor;
             } else {
-                throw new IllegalStateException("Can not wrap twice: " + connectionPoolDataSourceProxyClass);
+                throw new IllegalArgumentException("Can not wrap twice: " + connectionPoolDataSourceProxyClass);
             }
         }
         return null;
@@ -54,7 +64,7 @@ public class DataSourceWrapper implements Serializable {
                 }
                 return this.dataSourceConstructor;
             } else {
-                throw new IllegalStateException("Can not wrap twice: " + dataSourceProxyClass);
+                throw new IllegalArgumentException("Can not wrap twice: " + dataSourceProxyClass);
             }
         }
         return null;
@@ -83,7 +93,7 @@ public class DataSourceWrapper implements Serializable {
                 }
                 return this.xaDataSourceConstructor;
             } else {
-                throw new IllegalStateException("Can not wrap twice: " + xaDataSourceProxyClass);
+                throw new IllegalArgumentException("Can not wrap twice: " + xaDataSourceProxyClass);
             }
         }
         return null;
@@ -98,15 +108,21 @@ public class DataSourceWrapper implements Serializable {
     }
 
     public ConnectionPoolDataSource wrapConnectionPoolDataSource(final ConnectionPoolDataSource delegate) throws Exception {
-        return getConnectionPoolDataSourceConstructor(delegate.getClass()).newInstance(delegate);
+        final ConnectionPoolDataSource wrapper = getConnectionPoolDataSourceConstructor(delegate.getClass()).newInstance(delegate);
+        ensureOnlyWrappingOnce(delegate, wrapper);
+        return wrapper;
     }
 
     public DataSource wrapDataSource(final DataSource delegate) throws Exception {
-        return getDataSourceConstructor(delegate.getClass()).newInstance(delegate);
+        final DataSource wrapper = getDataSourceConstructor(delegate.getClass()).newInstance(delegate);
+        ensureOnlyWrappingOnce(delegate, wrapper);
+        return wrapper;
     }
 
     public XADataSource wrapXADataSource(final XADataSource delegate) throws Exception {
-        return getXADataSourceConstructor(delegate.getClass()).newInstance(delegate);
+        final XADataSource wrapper = getXADataSourceConstructor(delegate.getClass()).newInstance(delegate);
+        ensureOnlyWrappingOnce(delegate, wrapper);
+        return wrapper;
     }
 
     /**
@@ -118,7 +134,10 @@ public class DataSourceWrapper implements Serializable {
      * @see ConnectionPoolXADataSourceHybrid
      * @see XADataSourceHybrid
      */
-    public class Hybrid {
+    public final class Hybrid {
+
+        private Hybrid() {
+        }
 
         /**
          * Diese Wrapper-Klasse implementiert den Sonderfall das ein und dieselbe DataSource-Instanz
@@ -134,8 +153,11 @@ public class DataSourceWrapper implements Serializable {
          * implementiert.
          * @throws Exception wird ausgel&ouml;st wenn keine Wrapper-Objekte erzeugt werden k&ouml;nnen.
          */
+        @SuppressWarnings("unchecked")
         public <T extends ConnectionPoolDataSource & DataSource> T wrapConnectionPoolDataSourceHybrid(final T delegate) throws Exception {
-            return (T) new ConnectionPoolDataSourceHybrid(wrapDataSource(delegate), wrapConnectionPoolDataSource(delegate));
+            final T wrapper = (T) new ConnectionPoolDataSourceHybrid(wrapDataSource(delegate), wrapConnectionPoolDataSource(delegate));
+            ensureOnlyWrappingOnce(delegate, wrapper);
+            return wrapper;
         }
 
         /**
@@ -154,8 +176,11 @@ public class DataSourceWrapper implements Serializable {
          * {@link DataSource} implementiert.
          * @throws Exception wird ausgel&ouml;st wenn keine Wrapper-Objekte erzeugt werden k&ouml;nnen.
          */
+        @SuppressWarnings("unchecked")
         public <T extends ConnectionPoolDataSource & XADataSource & DataSource> T wrapConnectionPoolXADataSourceHybrid(final T delegate) throws Exception {
-            return (T) new ConnectionPoolXADataSourceHybrid(wrapDataSource(delegate), wrapConnectionPoolDataSource(delegate), wrapXADataSource(delegate));
+            final T wrapper = (T) new ConnectionPoolXADataSourceHybrid(wrapDataSource(delegate), wrapConnectionPoolDataSource(delegate), wrapXADataSource(delegate));
+            ensureOnlyWrappingOnce(delegate, wrapper);
+            return wrapper;
         }
 
         /**
@@ -170,8 +195,11 @@ public class DataSourceWrapper implements Serializable {
          * {@link XADataSource} und {@link DataSource} implementiert.
          * @throws Exception wird ausgel&ouml;st wenn keine Wrapper-Objekte erzeugt werden k&ouml;nnen.
          */
+        @SuppressWarnings("unchecked")
         public <T extends XADataSource & DataSource> T wrapXADataSourceHybrid(final T delegate) throws Exception {
-            return (T) new XADataSourceHybrid(wrapDataSource(delegate), wrapXADataSource(delegate));
+            final T wrapper = (T) new XADataSourceHybrid(wrapDataSource(delegate), wrapXADataSource(delegate));
+            ensureOnlyWrappingOnce(delegate, wrapper);
+            return wrapper;
         }
 
     }

@@ -27,7 +27,7 @@ public abstract class ConnectionProxy extends FactoryJdbcProxy<Connection> imple
     }
 
     public final void setAutoCommit(boolean autoCommit) throws SQLException {
-        throw new SQLException("AutoCommit is not allowed for transaction managed Connection.");
+        throw new SQLException("AutoCommit is not allowed for a transaction managed Connection.");
     }
 
 

@@ -50,6 +50,10 @@ public abstract class ConcurrentFactoryJdbcProxy<M extends Map<Object, Object> &
         this.concurrentMapFunktions = new ConcurrentMapFunktions<>(identityMap);
     }
 
+    public boolean isValid(int timeoutSeconds) throws SQLException {
+        return true;
+    }
+
     @SuppressWarnings("unchecked")
     protected final <T2> T2 wrapConcurrent(T2 delegate, BiFunction<T2, Object[], T2> objectMaker, final Object... argumentArray) throws SQLException {
         try {
@@ -57,9 +61,5 @@ public abstract class ConcurrentFactoryJdbcProxy<M extends Map<Object, Object> &
         } catch (InterruptedException | TimeoutException ex) {
             throw new SQLException(ex.toString(), ex);
         }
-    }
-
-    public boolean isValid(int timeoutSeconds) throws SQLException {
-        return true;
     }
 }

@@ -7,7 +7,7 @@ import eu.dirk.haase.jdbc.proxy.common.WeakIdentityHashMap;
 import javax.sql.ConnectionPoolDataSource;
 import javax.sql.PooledConnection;
 
-public abstract class PooledConnectionProxy extends ConcurrentFactoryJdbcProxy<WeakIdentityHashMap<Object,Object>, PooledConnection> implements ValidState {
+public abstract class PooledConnectionProxy extends ConcurrentFactoryJdbcProxy<WeakIdentityHashMap<Object, Object>, PooledConnection> implements ValidState {
 
     private final ConnectionPoolDataSource connectionPoolDataSource;
 

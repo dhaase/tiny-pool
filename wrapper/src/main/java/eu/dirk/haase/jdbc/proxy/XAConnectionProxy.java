@@ -7,7 +7,7 @@ import eu.dirk.haase.jdbc.proxy.common.WeakIdentityHashMap;
 import javax.sql.XAConnection;
 import javax.sql.XADataSource;
 
-public abstract class XAConnectionProxy extends ConcurrentFactoryJdbcProxy<WeakIdentityHashMap<Object,Object>, XAConnection> implements ValidState {
+public abstract class XAConnectionProxy extends ConcurrentFactoryJdbcProxy<WeakIdentityHashMap<Object, Object>, XAConnection> implements ValidState {
 
     private final XADataSource xaDataSource;
 

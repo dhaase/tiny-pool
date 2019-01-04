@@ -78,10 +78,10 @@ public interface ModificationStampingObject {
      * des Objektzustandes unmittelbar bevor steht.
      * <p>
      * Hintergrund f&uuml;r diese Einschr&auml;nkung ist:
-     * Ohne diese Einschr&auml;nkung w&auml;re eine Implementation nur mit dem Einsatz
-     * von Sperren m&ouml;glich, da Zustands&auml;nderungen dann nur atomar
-     * durchgef&uuml;hrt werden d&uuml;rften. Mit der Konsequenz das auch
-     * der Sinn dieses Interfaces konterkariert werden w&uuml;rde.
+     * Ohne diese Einschr&auml;nkung w&auml;re eine Implementation nur mit dem
+     * Einsatz von Sperren m&ouml;glich, da Zustands&auml;nderungen dann nur
+     * atomar durchgef&uuml;hrt werden d&uuml;rften. Mit der Konsequenz das
+     * auch der Sinn dieses Interfaces konterkariert werden w&uuml;rde.
      * <p>
      * Zusammenfassend liefert der Stempel-Wert folgende Zusicherung:
      * <ul>
@@ -94,7 +94,7 @@ public interface ModificationStampingObject {
      * <p>
      * Der Stempel-Wert hat, abgesehen von seiner Eindeutigkeit, keine weitere
      * Eigenschaften. Auch wenn der Stempel-Wert intern meist dadurch gebildet
-     * wird, indem er monoton inkrementiert wird, darf daraus dem Stempel-Wert
+     * wird, indem er monoton inkrementiert wird, darf deswegen dem Stempel-Wert
      * keine weitere Bedeutungen zugewiesen werden. Es k&ouml;nnen daher auch
      * keine weiteren Aussagen, wie zum Beispiel zeitliche Abfolgen -
      * vorher / nachher, aus dem Stempel-Wert abgelesen werden.

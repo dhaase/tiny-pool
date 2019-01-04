@@ -1,6 +1,5 @@
 package eu.dirk.haase.jdbc.proxy;
 
-import eu.dirk.haase.jdbc.proxy.base.CloseState;
 import eu.dirk.haase.jdbc.proxy.base.ConcurrentFactoryJdbcProxy;
 import eu.dirk.haase.jdbc.proxy.base.ValidState;
 import eu.dirk.haase.jdbc.proxy.common.WeakIdentityHashMap;
