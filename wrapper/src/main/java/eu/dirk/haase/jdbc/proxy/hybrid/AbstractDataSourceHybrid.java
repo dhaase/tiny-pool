@@ -39,6 +39,11 @@ abstract class AbstractDataSourceHybrid implements JdbcWrapper {
         return dataSourceProxy != null ? dataSourceProxy.equals(that.dataSourceProxy) : that.dataSourceProxy == null;
     }
 
+    /**
+     * Liefert das zugrundeliegende {@link DataSource}-Proxy Objekt.
+     *
+     * @return das zugrundeliegende {@link DataSource}-Proxy Objekt.
+     */
     public final DataSource getDataSourceProxy() {
         return dataSourceProxy;
     }

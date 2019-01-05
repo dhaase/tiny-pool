@@ -35,19 +35,55 @@ public abstract class FactoryJdbcProxy<T1> extends JdbcProxy<T1> {
 
     private final Map<Object, Object> identityMap;
 
+    /**
+     * Erzeugt ein JDBC-Objekt mit einer {@link WeakIdentityHashMap} als Cache.
+     *
+     * @param delegate das zugrundeliegende JDBC-Objekt.
+     */
     protected FactoryJdbcProxy(final T1 delegate) {
         this(delegate, new WeakIdentityHashMap<>());
     }
 
+
+    /**
+     * Erzeugt ein JDBC-Objekt.
+     *
+     * @param delegate    das zugrundeliegende JDBC-Objekt.
+     * @param identityMap eine Map-Implementation als Cache.
+     */
     protected FactoryJdbcProxy(final T1 delegate, final Map<Object, Object> identityMap) {
         super(delegate);
         this.identityMap = identityMap;
     }
 
+    /**
+     * Liefert unmittelbar das Map-Objekt mit Eintr&auml;gen die in der
+     * {@link #wrap(Object, BiFunction, Object...)} entstanden sind.
+     * <p>
+     * Als Schl&uuml;ssel dient das interne Objekt das dekoriert werden soll.
+     * <p>
+     * Als Wert wird das dekorierte Objekt verwendet.
+     *
+     * @return die Cache-Map.
+     */
     public final Map<Object, Object> cacheMap() {
         return identityMap;
     }
 
+    /**
+     * Dekoriert ein Objekt, das bedeutet: es wird in ein anderes Objekt eingepackt.
+     * <p>
+     * Diese Methode erzeugt nur dann ein neues Wrapper-Objekt wenn zu der internen Instanz
+     * noch kein Wrapper-Objekt erzeugt wurde.
+     * <p>
+     * Bereits dekorierte (eingepackte) Objekte werden kein zweites Mal eingepackt.
+     *
+     * @param delegate      das interne Objekt das dekoriert werden soll.
+     * @param objectMaker   Funktions-Objekt mit dem das Wrapper-Objekt erzeugt werden soll.
+     * @param argumentArray alle Parameter die urspr&uuml;nglich zum
+     *                      Erzeugen des internen Objektes verwendet wurden.
+     * @return das dekorierte (eingepackte) Objekt.
+     */
     @SuppressWarnings("unchecked")
     protected final <T2> T2 wrap(T2 delegate, BiFunction<T2, Object[], T2> objectMaker, final Object... argumentArray) {
         return (T2) identityMap.computeIfAbsent(delegate, (k) -> objectMaker.apply(delegate, argumentArray));

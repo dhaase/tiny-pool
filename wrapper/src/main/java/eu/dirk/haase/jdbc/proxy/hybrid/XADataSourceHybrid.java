@@ -102,7 +102,12 @@ public final class XADataSourceHybrid extends AbstractDataSourceHybrid implement
         return xaDataSourceProxy.getXAConnection(user, password);
     }
 
-    public XADataSource getXaDataSourceProxy() {
+    /**
+     * Liefert das zugrundeliegende {@link XADataSource}-Proxy Objekt.
+     *
+     * @return das zugrundeliegende {@link XADataSource}-Proxy Objekt.
+     */
+    public XADataSource getXADataSourceProxy() {
         return xaDataSourceProxy;
     }
 

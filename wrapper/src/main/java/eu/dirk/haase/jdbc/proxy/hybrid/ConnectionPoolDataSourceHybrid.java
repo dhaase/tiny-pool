@@ -68,6 +68,11 @@ public final class ConnectionPoolDataSourceHybrid extends AbstractDataSourceHybr
         return dataSourceProxy.getConnection(username, password);
     }
 
+    /**
+     * Liefert das zugrundeliegende {@link ConnectionPoolDataSource}-Proxy Objekt.
+     *
+     * @return das zugrundeliegende {@link ConnectionPoolDataSource}-Proxy Objekt.
+     */
     public ConnectionPoolDataSource getConnectionPoolDataSourceProxy() {
         return connectionPoolDataSourceProxy;
     }

@@ -5,6 +5,7 @@ import eu.dirk.haase.jdbc.proxy.base.FactoryJdbcProxy;
 import eu.dirk.haase.jdbc.proxy.base.ValidState;
 
 import javax.sql.DataSource;
+import javax.sql.PooledConnection;
 import java.sql.*;
 
 public abstract class AbstractConnectionProxy extends FactoryJdbcProxy<Connection> implements CloseState, ValidState {
@@ -21,7 +22,13 @@ public abstract class AbstractConnectionProxy extends FactoryJdbcProxy<Connectio
         }
     }
 
-    public final DataSource getDataSource() {
+    /**
+     * Liefert das {@link DataSource}-Objekt (das dieses Objekt erzeugt hat),
+     * welches wahrscheinlich auch ein Proxy-Objekt ist.
+     *
+     * @return das zugrundeliegende {@link DataSource}-Objekt.
+     */
+    public final DataSource getDataSourceProxy() {
         return dataSource;
     }
 
@@ -29,10 +36,46 @@ public abstract class AbstractConnectionProxy extends FactoryJdbcProxy<Connectio
         throw new SQLException("AutoCommit is not allowed for a transaction managed Connection.");
     }
 
+    /**
+     * Dekoriert ein {@link CallableStatement}-Objekt, das bedeutet: es wird in ein anderes
+     * Objekt eingepackt (welches selbst das Interface {@link CallableStatement} implementiert).
+     * <p>
+     * Die Implementation dieser Methode wird generiert und muss daher nicht implementiert
+     * werden.
+     *
+     * @param delegate      das interne {@link CallableStatement}-Objekt das dekoriert werden soll.
+     * @param argumentArray alle Parameter die urspr&uuml;nglich zum
+     *                      Erzeugen des internen Objektes verwendet wurden.
+     * @return das dekorierte {@link CallableStatement}-Objekt.
+     */
     protected abstract CallableStatement wrapCallableStatement(CallableStatement delegate, Object... argumentArray);
 
+    /**
+     * Dekoriert ein {@link PreparedStatement}-Objekt, das bedeutet: es wird in ein anderes
+     * Objekt eingepackt (welches selbst das Interface {@link PreparedStatement} implementiert).
+     * <p>
+     * Die Implementation dieser Methode wird generiert und muss daher nicht implementiert
+     * werden.
+     *
+     * @param delegate      das interne {@link PreparedStatement}-Objekt das dekoriert werden soll.
+     * @param argumentArray alle Parameter die urspr&uuml;nglich zum
+     *                      Erzeugen des internen Objektes verwendet wurden.
+     * @return das dekorierte {@link PreparedStatement}-Objekt.
+     */
     protected abstract PreparedStatement wrapPreparedStatement(PreparedStatement delegate, Object... argumentArray);
 
+    /**
+     * Dekoriert ein {@link Statement}-Objekt, das bedeutet: es wird in ein anderes
+     * Objekt eingepackt (welches selbst das Interface {@link Statement} implementiert).
+     * <p>
+     * Die Implementation dieser Methode wird generiert und muss daher nicht implementiert
+     * werden.
+     *
+     * @param delegate      das interne {@link Statement}-Objekt das dekoriert werden soll.
+     * @param argumentArray alle Parameter die urspr&uuml;nglich zum
+     *                      Erzeugen des internen Objektes verwendet wurden.
+     * @return das dekorierte {@link Statement}-Objekt.
+     */
     protected abstract Statement wrapStatement(Statement delegate, Object... argumentArray);
 
 }

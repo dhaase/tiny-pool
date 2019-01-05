@@ -38,7 +38,7 @@ public class JavassistProxyClassGenerator {
         CtClass intfClass = classPool.getCtClass(primaryInterface.getName());
         for (CtMethod intfMethod : intfClass.getMethods()) {
             final String signature = getSignature(intfMethod);
-            if (allMethodSet.add(signature)) {
+            if (allMethodSet.add(signature) && isPublic(intfMethod.getModifiers())) {
                 CtMethod newMethod = new CtMethod(intfMethod.getReturnType(), intfMethod.getName(), intfMethod.getParameterTypes(), targetCt);
                 newMethod.setExceptionTypes(intfMethod.getExceptionTypes());
                 CtClass child = childs.get(intfMethod.getName());
@@ -158,6 +158,16 @@ public class JavassistProxyClassGenerator {
         this.allInitFieldSet.clear();
         this.allFieldSet.clear();
         this.allMethodSet.clear();
+    }
+
+    /**
+     * Liefert {@code true} wenn der {@link Modifier} {@code public} ist.
+     *
+     * @param modifier der Modifier der gepr&uuml;ft werden soll.
+     * @return {@code true} wenn der {@link Modifier} {@code public} ist.
+     */
+    private boolean isPublic(final int modifier) {
+        return (modifier & Modifier.PUBLIC) != 0;
     }
 
 

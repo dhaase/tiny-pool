@@ -96,7 +96,7 @@ public abstract class JdbcProxy<T1> implements JdbcWrapper {
     }
 
     @Override
-    public String toString() {
+    public final String toString() {
         return getClass().getSimpleName() + "{" +
                 "delegate=" + delegate +
                 '}';

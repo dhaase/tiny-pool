@@ -3,6 +3,7 @@ package eu.dirk.haase.jdbc.proxy;
 import eu.dirk.haase.jdbc.proxy.base.CloseState;
 import eu.dirk.haase.jdbc.proxy.base.JdbcProxy;
 
+import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
 
@@ -17,7 +18,13 @@ public abstract class AbstractResultSetProxy extends JdbcProxy<ResultSet> implem
         this.delegate = delegate;
     }
 
-    public final Statement getStatement() {
+    /**
+     * Liefert das {@link Statement}-Objekt (das dieses Objekt erzeugt hat),
+     * welches wahrscheinlich auch ein Proxy-Objekt ist.
+     *
+     * @return das zugrundeliegende {@link Statement}-Objekt.
+     */
+    public final Statement getStatementProxy() {
         return statement;
     }
 

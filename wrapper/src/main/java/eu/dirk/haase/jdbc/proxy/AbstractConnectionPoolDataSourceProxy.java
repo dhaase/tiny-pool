@@ -15,6 +15,18 @@ public abstract class AbstractConnectionPoolDataSourceProxy extends ConcurrentFa
         super(delegate);
     }
 
+    /**
+     * Dekoriert ein {@link PooledConnection}-Objekt, das bedeutet: es wird in ein anderes
+     * Objekt eingepackt (welches selbst das Interface {@link PooledConnection} implementiert).
+     * <p>
+     * Die Implementation dieser Methode wird generiert und muss daher nicht implementiert
+     * werden.
+     *
+     * @param delegate      das interne {@link PooledConnection}-Objekt das dekoriert werden soll.
+     * @param argumentArray alle Parameter die urspr&uuml;nglich zum
+     *                      Erzeugen des internen Objektes verwendet wurden.
+     * @return das dekorierte {@link PooledConnection}-Objekt.
+     */
     protected abstract PooledConnection wrapPooledConnection(PooledConnection delegate, Object... argumentArray);
 
 }

@@ -39,11 +39,27 @@ public abstract class ConcurrentFactoryJdbcProxy<M extends Map<Object, Object> &
     private final ConcurrentMapFunktions<M, Object, Object> concurrentMapFunktions;
     private final StampedLock stampedLock;
 
+    /**
+     * Erzeugt ein JDBC-Objekt mit einer {@link WeakIdentityHashMap} als Cache und einem
+     * {@link StampedLock} als Sperre zur Synchronisation der
+     * {@link #wrapConcurrent(Object, BiFunction, Object...)}-Methode.
+     *
+     * @param delegate das zugrundeliegende JDBC-Objekt.
+     */
     @SuppressWarnings("unchecked")
     protected ConcurrentFactoryJdbcProxy(T1 delegate) {
         this(delegate, (M) new WeakIdentityHashMap<>(), new StampedLock());
     }
 
+    /**
+     * Erzeugt ein JDBC-Objekt.
+     *
+     * @param delegate    das zugrundeliegende JDBC-Objekt.
+     * @param identityMap eine Map-Implementation als Cache die auch das Interface
+     *                    {@link ModificationStampingObject} implementiert.
+     * @param stampedLock die {@link StampedLock}-Sperre zur Synchronisation der
+     *                    {@link #wrapConcurrent(Object, BiFunction, Object...)}-Methode.
+     */
     private ConcurrentFactoryJdbcProxy(T1 delegate, final M identityMap, final StampedLock stampedLock) {
         super(delegate, identityMap);
         this.stampedLock = stampedLock;
@@ -54,6 +70,24 @@ public abstract class ConcurrentFactoryJdbcProxy<M extends Map<Object, Object> &
         return true;
     }
 
+
+    /**
+     * Dekoriert ein Objekt, das bedeutet: es wird in ein anderes Objekt eingepackt.
+     * <p>
+     * Diese Methode erzeugt nur dann ein neues Wrapper-Objekt wenn zu der internen Instanz
+     * noch kein Wrapper-Objekt erzeugt wurde.
+     * <p>
+     * Bereits dekorierte (eingepackte) Objekte werden kein zweites Mal eingepackt.
+     * <p>
+     * Diese Methode kann ohne weitere Synchronisation nebenl&auml;fig ausgef&uuml;hrt
+     * werden.
+     *
+     * @param delegate      das interne Objekt das dekoriert werden soll.
+     * @param objectMaker   Funktions-Objekt mit dem das Wrapper-Objekt erzeugt werden soll.
+     * @param argumentArray alle Parameter die urspr&uuml;nglich zum
+     *                      Erzeugen des internen Objektes verwendet wurden.
+     * @return das dekorierte (eingepackte) Objekt.
+     */
     @SuppressWarnings("unchecked")
     protected final <T2> T2 wrapConcurrent(T2 delegate, BiFunction<T2, Object[], T2> objectMaker, final Object... argumentArray) throws SQLException {
         try {
