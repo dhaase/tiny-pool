@@ -41,7 +41,7 @@ public abstract class AbstractXAConnectionProxy extends ConcurrentFactoryJdbcPro
      *                      Erzeugen des internen Objektes verwendet wurden.
      * @return das dekorierte {@link Connection}-Objekt.
      */
-    protected abstract Connection wrapConnection(Connection delegate, Object... argumentArray);
+    protected abstract <T extends Connection> T wrapConnection(Connection delegate, Object... argumentArray);
 
     /**
      * Dekoriert ein {@link XAResource}-Objekt, das bedeutet: es wird in ein anderes
@@ -55,6 +55,6 @@ public abstract class AbstractXAConnectionProxy extends ConcurrentFactoryJdbcPro
      *                      Erzeugen des internen Objektes verwendet wurden.
      * @return das dekorierte {@link XAResource}-Objekt.
      */
-    protected abstract XAResource wrapXAResource(XAResource delegate, Object... argumentArray);
+    protected abstract <T extends XAResource> T wrapXAResource(XAResource delegate, Object... argumentArray);
 
 }

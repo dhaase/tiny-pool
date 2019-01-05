@@ -41,6 +41,6 @@ public abstract class AbstractPreparedStatementProxy extends FactoryJdbcProxy<Pr
      *                      Erzeugen des internen Objektes verwendet wurden.
      * @return das dekorierte {@link ResultSet}-Objekt.
      */
-    protected abstract ResultSet wrapResultSet(ResultSet delegate, Object... argumentArray);
+    protected abstract <T extends ResultSet> T wrapResultSet(ResultSet delegate, Object... argumentArray);
 
 }

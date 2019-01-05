@@ -55,9 +55,9 @@ public abstract class ConcurrentFactoryJdbcProxy<M extends Map<Object, Object> &
      * Erzeugt ein JDBC-Objekt.
      *
      * @param delegate    das zugrundeliegende JDBC-Objekt.
-     * @param identityMap eine Map-Implementation als Cache die auch das Interface
+     * @param identityMap eine Map-Implementation als Cache das auch das Interface
      *                    {@link ModificationStampingObject} implementiert.
-     * @param stampedLock die {@link StampedLock}-Sperre zur Synchronisation der
+     * @param stampedLock die {@link StampedLock}-Sperre zur Synchronisation in der
      *                    {@link #wrapConcurrent(Object, BiFunction, Object...)}-Methode.
      */
     private ConcurrentFactoryJdbcProxy(T1 delegate, final M identityMap, final StampedLock stampedLock) {
@@ -77,10 +77,11 @@ public abstract class ConcurrentFactoryJdbcProxy<M extends Map<Object, Object> &
      * Diese Methode erzeugt nur dann ein neues Wrapper-Objekt wenn zu der internen Instanz
      * noch kein Wrapper-Objekt erzeugt wurde.
      * <p>
-     * Bereits dekorierte (eingepackte) Objekte werden kein zweites Mal eingepackt.
+     * Ein Identity-Cache verhindert das bereits dekorierte (eingepackte) Objekte ein
+     * zweites Mal eingepackt werden.
      * <p>
-     * Diese Methode kann ohne weitere Synchronisation nebenl&auml;fig ausgef&uuml;hrt
-     * werden.
+     * Diese Methode verwendet eine {@link StampedLock}-Sperre zur Synchronisation und
+     * kann daher nebenl&auml;fig ausgef&uuml;hrt werden.
      *
      * @param delegate      das interne Objekt das dekoriert werden soll.
      * @param objectMaker   Funktions-Objekt mit dem das Wrapper-Objekt erzeugt werden soll.

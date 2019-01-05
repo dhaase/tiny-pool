@@ -48,7 +48,7 @@ public abstract class AbstractConnectionProxy extends FactoryJdbcProxy<Connectio
      *                      Erzeugen des internen Objektes verwendet wurden.
      * @return das dekorierte {@link CallableStatement}-Objekt.
      */
-    protected abstract CallableStatement wrapCallableStatement(CallableStatement delegate, Object... argumentArray);
+    protected abstract <T extends CallableStatement> T wrapCallableStatement(CallableStatement delegate, Object... argumentArray);
 
     /**
      * Dekoriert ein {@link PreparedStatement}-Objekt, das bedeutet: es wird in ein anderes
@@ -62,7 +62,7 @@ public abstract class AbstractConnectionProxy extends FactoryJdbcProxy<Connectio
      *                      Erzeugen des internen Objektes verwendet wurden.
      * @return das dekorierte {@link PreparedStatement}-Objekt.
      */
-    protected abstract PreparedStatement wrapPreparedStatement(PreparedStatement delegate, Object... argumentArray);
+    protected abstract <T extends PreparedStatement> T wrapPreparedStatement(PreparedStatement delegate, Object... argumentArray);
 
     /**
      * Dekoriert ein {@link Statement}-Objekt, das bedeutet: es wird in ein anderes
@@ -76,6 +76,6 @@ public abstract class AbstractConnectionProxy extends FactoryJdbcProxy<Connectio
      *                      Erzeugen des internen Objektes verwendet wurden.
      * @return das dekorierte {@link Statement}-Objekt.
      */
-    protected abstract Statement wrapStatement(Statement delegate, Object... argumentArray);
+    protected abstract <T extends Statement> T wrapStatement(Statement delegate, Object... argumentArray);
 
 }

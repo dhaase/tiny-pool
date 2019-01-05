@@ -87,6 +87,7 @@ public class ReadWriteLockTest {
     }
 
     @Test
+    @Ignore("Kein automatischer Test da nur einmaliger konzeptioneller Test")
     public void test_for_no_concurrent_modification_optimistic_stamped_lock() throws Exception {
         final int nThreads = 10;
         final CountDownLatch countDownLatch = new CountDownLatch(nThreads);
@@ -96,6 +97,7 @@ public class ReadWriteLockTest {
     }
 
     @Test
+    @Ignore("Kein automatischer Test da nur einmaliger konzeptioneller Test")
     public void test_for_no_concurrent_modification_read_write_lock() throws Exception {
         final int nThreads = 10;
         final CountDownLatch countDownLatch = new CountDownLatch(nThreads);

@@ -43,37 +43,37 @@ public class JavassistProxyClasses {
         this.iface2ClassMap = new HashMap<>(iface2ClassMap);
 
         if (iface2ClassMap.containsKey(ResultSet.class)) {
-            this.resultSetGen = new JavassistProxyClassGenerator(classNameFun, ResultSet.class, iface2ClassMap.get(ResultSet.class), false);
+            this.resultSetGen = new JavassistProxyClassGenerator(classNameFun, ResultSet.class, iface2ClassMap.get(ResultSet.class));
         }
         if (iface2ClassMap.containsKey(Connection.class)) {
-            this.connectionGen = new JavassistProxyClassGenerator(classNameFun, Connection.class, iface2ClassMap.get(Connection.class), false);
+            this.connectionGen = new JavassistProxyClassGenerator(classNameFun, Connection.class, iface2ClassMap.get(Connection.class));
         }
         if (iface2ClassMap.containsKey(PreparedStatement.class)) {
-            this.preparedStatementGen = new JavassistProxyClassGenerator(classNameFun, PreparedStatement.class, iface2ClassMap.get(PreparedStatement.class), false);
+            this.preparedStatementGen = new JavassistProxyClassGenerator(classNameFun, PreparedStatement.class, iface2ClassMap.get(PreparedStatement.class));
         }
         if (iface2ClassMap.containsKey(CallableStatement.class)) {
-            this.callableStatementGen = new JavassistProxyClassGenerator(classNameFun, CallableStatement.class, iface2ClassMap.get(CallableStatement.class), false);
+            this.callableStatementGen = new JavassistProxyClassGenerator(classNameFun, CallableStatement.class, iface2ClassMap.get(CallableStatement.class));
         }
         if (iface2ClassMap.containsKey(Statement.class)) {
-            this.statementGen = new JavassistProxyClassGenerator(classNameFun, Statement.class, iface2ClassMap.get(Statement.class), false);
+            this.statementGen = new JavassistProxyClassGenerator(classNameFun, Statement.class, iface2ClassMap.get(Statement.class));
         }
         if (iface2ClassMap.containsKey(DataSource.class)) {
-            this.dataSourceGen = new JavassistProxyClassGenerator(classNameFun, DataSource.class, iface2ClassMap.get(DataSource.class), true);
+            this.dataSourceGen = new JavassistProxyClassGenerator(classNameFun, DataSource.class, iface2ClassMap.get(DataSource.class));
         }
         if (iface2ClassMap.containsKey(XAConnection.class)) {
-            this.xaconnectionGen = new JavassistProxyClassGenerator(classNameFun, XAConnection.class, iface2ClassMap.get(XAConnection.class), true);
+            this.xaconnectionGen = new JavassistProxyClassGenerator(classNameFun, XAConnection.class, iface2ClassMap.get(XAConnection.class));
         }
         if (iface2ClassMap.containsKey(XADataSource.class)) {
-            this.xadataSourceGen = new JavassistProxyClassGenerator(classNameFun, XADataSource.class, iface2ClassMap.get(XADataSource.class), true);
+            this.xadataSourceGen = new JavassistProxyClassGenerator(classNameFun, XADataSource.class, iface2ClassMap.get(XADataSource.class));
         }
         if (iface2ClassMap.containsKey(XAResource.class)) {
-            this.xaResourceGen = new JavassistProxyClassGenerator(classNameFun, XAResource.class, iface2ClassMap.get(XAResource.class), true);
+            this.xaResourceGen = new JavassistProxyClassGenerator(classNameFun, XAResource.class, iface2ClassMap.get(XAResource.class));
         }
         if (iface2ClassMap.containsKey(PooledConnection.class)) {
-            this.pooledConnectionGen = new JavassistProxyClassGenerator(classNameFun, PooledConnection.class, iface2ClassMap.get(PooledConnection.class), true);
+            this.pooledConnectionGen = new JavassistProxyClassGenerator(classNameFun, PooledConnection.class, iface2ClassMap.get(PooledConnection.class));
         }
         if (iface2ClassMap.containsKey(ConnectionPoolDataSource.class)) {
-            this.connectionPoolDataSourceGen = new JavassistProxyClassGenerator(classNameFun, ConnectionPoolDataSource.class, iface2ClassMap.get(ConnectionPoolDataSource.class), true);
+            this.connectionPoolDataSourceGen = new JavassistProxyClassGenerator(classNameFun, ConnectionPoolDataSource.class, iface2ClassMap.get(ConnectionPoolDataSource.class));
         }
     }
 

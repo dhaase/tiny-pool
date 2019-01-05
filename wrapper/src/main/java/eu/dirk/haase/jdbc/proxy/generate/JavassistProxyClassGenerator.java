@@ -1,5 +1,6 @@
 package eu.dirk.haase.jdbc.proxy.generate;
 
+import eu.dirk.haase.jdbc.proxy.base.ConcurrentFactoryJdbcProxy;
 import javassist.*;
 
 import java.util.HashSet;
@@ -21,13 +22,13 @@ public class JavassistProxyClassGenerator {
     private final BiFunction<String, String, String> wrapMethodBody;
     private ClassPool classPool;
 
-    public JavassistProxyClassGenerator(final BiFunction<String, Class<?>, String> classNameFun, final Class<?> primaryIfaceClass, final Class<?> superClass, boolean isWrapMethodConcurrent) {
+    public JavassistProxyClassGenerator(final BiFunction<String, Class<?>, String> classNameFun, final Class<?> primaryIfaceClass, final Class<?> superClass) {
         this.newClassName = classNameFun.apply(superClass.getName(), primaryIfaceClass);
         this.delegateMethodBody = (d) -> "{ try { return delegate." + d + "($$); } catch (SQLException e) { throw checkException(e); } }";
         this.wrapMethodBody = (w, d) -> "{ try { return " + w + "(delegate." + d + "($$), $args); } catch (SQLException e) { throw checkException(e); } }";
         this.primaryIfaceClass = primaryIfaceClass;
         this.superClass = superClass;
-        this.isWrapMethodConcurrent = isWrapMethodConcurrent;
+        this.isWrapMethodConcurrent = ConcurrentFactoryJdbcProxy.class.isAssignableFrom(superClass);
         this.allInitFieldSet = new HashSet<>();
         this.allFieldSet = new HashSet<>();
         this.allMethodSet = new HashSet<>();

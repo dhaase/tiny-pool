@@ -27,6 +27,6 @@ public abstract class AbstractXADataSourceProxy extends ConcurrentFactoryJdbcPro
      *                      Erzeugen des internen Objektes verwendet wurden.
      * @return das dekorierte {@link XAConnection}-Objekt.
      */
-    protected abstract XAConnection wrapXAConnection(XAConnection delegate, Object... argumentArray);
+    protected abstract <T extends XAConnection> T wrapXAConnection(XAConnection delegate, Object... argumentArray);
 
 }

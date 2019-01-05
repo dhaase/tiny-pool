@@ -40,6 +40,6 @@ public abstract class AbstractPooledConnectionProxy extends ConcurrentFactoryJdb
      *                      Erzeugen des internen Objektes verwendet wurden.
      * @return das dekorierte {@link Connection}-Objekt.
      */
-    protected abstract Connection wrapConnection(Connection delegate, Object... argumentArray);
+    protected abstract <T extends Connection> T wrapConnection(Connection delegate, Object... argumentArray);
 
 }

@@ -76,7 +76,8 @@ public abstract class FactoryJdbcProxy<T1> extends JdbcProxy<T1> {
      * Diese Methode erzeugt nur dann ein neues Wrapper-Objekt wenn zu der internen Instanz
      * noch kein Wrapper-Objekt erzeugt wurde.
      * <p>
-     * Bereits dekorierte (eingepackte) Objekte werden kein zweites Mal eingepackt.
+     * Ein Identity-Cache verhindert das bereits dekorierte (eingepackte) Objekte ein
+     * zweites Mal eingepackt werden.
      *
      * @param delegate      das interne Objekt das dekoriert werden soll.
      * @param objectMaker   Funktions-Objekt mit dem das Wrapper-Objekt erzeugt werden soll.

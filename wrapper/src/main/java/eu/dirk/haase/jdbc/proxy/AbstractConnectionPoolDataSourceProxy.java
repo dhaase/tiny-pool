@@ -27,6 +27,6 @@ public abstract class AbstractConnectionPoolDataSourceProxy extends ConcurrentFa
      *                      Erzeugen des internen Objektes verwendet wurden.
      * @return das dekorierte {@link PooledConnection}-Objekt.
      */
-    protected abstract PooledConnection wrapPooledConnection(PooledConnection delegate, Object... argumentArray);
+    protected abstract <T extends PooledConnection> T wrapPooledConnection(PooledConnection delegate, Object... argumentArray);
 
 }
