@@ -74,14 +74,16 @@ public interface ModificationStampingObject {
      * Andererseits bedeutet ver&auml;nderter Stempel-Wert nicht zwangsl&auml;ufig,
      * das sich der interne Zustand des Objektes genau indem Zeitpunkt ver&auml;ndert
      * hat.
-     * Ein ver&auml;nderter Stempel-Wert zeigt daher nur an, das eine &Auml;nderung
-     * des Objektzustandes unmittelbar bevor steht.
+     * Ein ver&auml;nderter Stempel-Wert zeigt daher meist nur an, das eine
+     * &Auml;nderung des Objektzustandes unmittelbar bevor steht.
      * <p>
      * Hintergrund f&uuml;r diese Einschr&auml;nkung ist:
+     * <p>
      * Ohne diese Einschr&auml;nkung w&auml;re eine Implementation nur mit dem
      * Einsatz von Sperren m&ouml;glich, da Zustands&auml;nderungen dann nur
      * atomar durchgef&uuml;hrt werden d&uuml;rften. Mit der Konsequenz das
-     * auch der Sinn dieses Interfaces konterkariert werden w&uuml;rde.
+     * auch der Sinn dieses Interfaces (die Realisierung von optimistischen
+     * Sperren) konterkariert werden w&uuml;rde.
      * <p>
      * Zusammenfassend liefert der Stempel-Wert folgende Zusicherung:
      * <ul>

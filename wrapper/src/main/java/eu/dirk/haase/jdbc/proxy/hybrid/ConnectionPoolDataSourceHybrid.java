@@ -35,7 +35,7 @@ import java.util.logging.Logger;
  * @see ConnectionPoolDataSource
  * @see DataSource
  */
-public final class ConnectionPoolDataSourceHybrid extends AbstractDataSourceHybrid implements ConnectionPoolDataSource, DataSource {
+public final class ConnectionPoolDataSourceHybrid extends AbstractDataSourceHybrid implements ConnectionPoolDataSource {
 
     private final ConnectionPoolDataSource connectionPoolDataSourceProxy;
     private final DataSource dataSourceProxy;
@@ -58,16 +58,6 @@ public final class ConnectionPoolDataSourceHybrid extends AbstractDataSourceHybr
         this.connectionPoolDataSourceProxy = connectionPoolDataSourceProxy;
     }
 
-    @Override
-    public Connection getConnection() throws SQLException {
-        return dataSourceProxy.getConnection();
-    }
-
-    @Override
-    public Connection getConnection(String username, String password) throws SQLException {
-        return dataSourceProxy.getConnection(username, password);
-    }
-
     /**
      * Liefert das zugrundeliegende {@link ConnectionPoolDataSource}-Proxy Objekt.
      *
@@ -75,31 +65,6 @@ public final class ConnectionPoolDataSourceHybrid extends AbstractDataSourceHybr
      */
     public ConnectionPoolDataSource getConnectionPoolDataSourceProxy() {
         return connectionPoolDataSourceProxy;
-    }
-
-    @Override
-    public PrintWriter getLogWriter() throws SQLException {
-        return dataSourceProxy.getLogWriter();
-    }
-
-    @Override
-    public void setLogWriter(PrintWriter out) throws SQLException {
-        dataSourceProxy.setLogWriter(out);
-    }
-
-    @Override
-    public int getLoginTimeout() throws SQLException {
-        return dataSourceProxy.getLoginTimeout();
-    }
-
-    @Override
-    public void setLoginTimeout(int seconds) throws SQLException {
-        dataSourceProxy.setLoginTimeout(seconds);
-    }
-
-    @Override
-    public Logger getParentLogger() throws SQLFeatureNotSupportedException {
-        return dataSourceProxy.getParentLogger();
     }
 
     @Override
@@ -155,7 +120,7 @@ public final class ConnectionPoolDataSourceHybrid extends AbstractDataSourceHybr
      *                      werden kann.
      */
     @Override
-    public final boolean isWrapperFor(Class<?> iface) throws SQLException {
+    public boolean isWrapperFor(Class<?> iface) throws SQLException {
         if (Unwrapper.isWrapperFor(iface, this, this.dataSourceProxy)) {
             return true;
         } else {
@@ -208,7 +173,7 @@ public final class ConnectionPoolDataSourceHybrid extends AbstractDataSourceHybr
      *                      von der angegebenen Klasse oder Interface abstammt.
      */
     @Override
-    public final <T2> T2 unwrap(Class<T2> iface) throws SQLException {
+    public <T2> T2 unwrap(Class<T2> iface) throws SQLException {
         if (Unwrapper.isWrapperFor(iface, this, this.dataSourceProxy)) {
             return Unwrapper.unwrap(iface, this, this.dataSourceProxy);
         } else {

@@ -34,7 +34,7 @@ import java.util.logging.Logger;
  * @see DataSource
  * @see XADataSource
  */
-public final class XADataSourceHybrid extends AbstractDataSourceHybrid implements XADataSource, DataSource {
+public final class XADataSourceHybrid extends AbstractDataSourceHybrid implements XADataSource {
 
     private final DataSource dataSourceProxy;
     private final XADataSource xaDataSourceProxy;
@@ -55,41 +55,6 @@ public final class XADataSourceHybrid extends AbstractDataSourceHybrid implement
         super(dataSourceProxy);
         this.dataSourceProxy = dataSourceProxy;
         this.xaDataSourceProxy = xaDataSourceProxy;
-    }
-
-    @Override
-    public Connection getConnection() throws SQLException {
-        return dataSourceProxy.getConnection();
-    }
-
-    @Override
-    public Connection getConnection(String username, String password) throws SQLException {
-        return dataSourceProxy.getConnection(username, password);
-    }
-
-    @Override
-    public PrintWriter getLogWriter() throws SQLException {
-        return dataSourceProxy.getLogWriter();
-    }
-
-    @Override
-    public void setLogWriter(PrintWriter out) throws SQLException {
-        dataSourceProxy.setLogWriter(out);
-    }
-
-    @Override
-    public int getLoginTimeout() throws SQLException {
-        return dataSourceProxy.getLoginTimeout();
-    }
-
-    @Override
-    public void setLoginTimeout(int seconds) throws SQLException {
-        dataSourceProxy.setLoginTimeout(seconds);
-    }
-
-    @Override
-    public Logger getParentLogger() throws SQLFeatureNotSupportedException {
-        return dataSourceProxy.getParentLogger();
     }
 
     @Override
@@ -154,7 +119,7 @@ public final class XADataSourceHybrid extends AbstractDataSourceHybrid implement
      *                      werden kann.
      */
     @Override
-    public final boolean isWrapperFor(Class<?> iface) throws SQLException {
+    public boolean isWrapperFor(Class<?> iface) throws SQLException {
         if (Unwrapper.isWrapperFor(iface, this, this.dataSourceProxy)) {
             return true;
         } else {
@@ -207,7 +172,7 @@ public final class XADataSourceHybrid extends AbstractDataSourceHybrid implement
      *                      von der angegebenen Klasse oder Interface abstammt.
      */
     @Override
-    public final <T2> T2 unwrap(Class<T2> iface) throws SQLException {
+    public <T2> T2 unwrap(Class<T2> iface) throws SQLException {
         if (Unwrapper.isWrapperFor(iface, this, this.dataSourceProxy)) {
             return Unwrapper.unwrap(iface, this, this.dataSourceProxy);
         } else {
