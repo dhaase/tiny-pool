@@ -4,6 +4,10 @@ import eu.dirk.haase.jdbc.proxy.AbstractXAConnectionProxy;
 
 import javax.sql.XAConnection;
 import javax.sql.XADataSource;
+import javax.transaction.RollbackException;
+import javax.transaction.SystemException;
+import javax.transaction.Transaction;
+import javax.transaction.TransactionManager;
 import javax.transaction.xa.XAResource;
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -11,10 +15,19 @@ import java.sql.SQLException;
 public abstract class XAConnectionProxy extends AbstractXAConnectionProxy implements XAConnection {
 
     private final XAConnection delegate;
+    private TransactionManager transactionManager;
 
     protected XAConnectionProxy(XAConnection delegate, XADataSource xaDataSource, Object[] argumentArray) {
         super(delegate, xaDataSource, argumentArray);
         this.delegate = delegate;
+    }
+
+    public TransactionManager getTransactionManager() {
+        return transactionManager;
+    }
+
+    public void setTransactionManager(TransactionManager transactionManager) {
+        this.transactionManager = transactionManager;
     }
 
     @Override
@@ -29,9 +42,11 @@ public abstract class XAConnectionProxy extends AbstractXAConnectionProxy implem
     @Override
     public XAResource getXAResource() throws SQLException {
         try {
-            return this.wrapXAResource(this.delegate.getXAResource());
-        } catch (SQLException var2) {
-            throw this.checkException(var2);
+            final XAResourceProxy xaResource = this.wrapXAResource(this.delegate.getXAResource());
+            xaResource.setTransactionManager(transactionManager);
+            return xaResource;
+        } catch (RollbackException | SystemException | SQLException ex) {
+            throw this.checkException(ex);
         }
     }
 

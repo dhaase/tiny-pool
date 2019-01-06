@@ -21,8 +21,12 @@ public abstract class JdbcProxy<T1> implements JdbcWrapper {
         this.delegate = delegate;
     }
 
-    protected SQLException checkException(SQLException e) {
-        return e;
+    protected SQLException checkException(Exception ex) {
+        if (ex instanceof SQLException) {
+            return (SQLException) ex;
+        } else {
+            return new SQLException(ex.toString(), ex);
+        }
     }
 
     /**

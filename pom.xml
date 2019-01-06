@@ -22,6 +22,11 @@
                 <artifactId>wrapper</artifactId>
                 <version>${project.version}</version>
             </dependency>
+            <dependency>
+                <groupId>org.jboss.spec.javax.transaction</groupId>
+                <artifactId>jboss-transaction-api_1.2_spec</artifactId>
+                <version>1.0.0.Final</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
