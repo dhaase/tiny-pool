@@ -44,6 +44,7 @@ public abstract class XAConnectionProxy extends AbstractXAConnectionProxy implem
         try {
             final XAResourceProxy xaResource = this.wrapXAResource(this.delegate.getXAResource());
             xaResource.setTransactionManager(transactionManager);
+            xaResource.enlistResource();
             return xaResource;
         } catch (RollbackException | SystemException | SQLException ex) {
             throw this.checkException(ex);

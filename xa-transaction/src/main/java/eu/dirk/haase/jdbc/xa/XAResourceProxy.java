@@ -3,37 +3,52 @@ package eu.dirk.haase.jdbc.xa;
 import eu.dirk.haase.jdbc.proxy.AbstractXAResourceProxy;
 
 import javax.sql.XAConnection;
-import javax.transaction.RollbackException;
-import javax.transaction.SystemException;
-import javax.transaction.Transaction;
-import javax.transaction.TransactionManager;
+import javax.transaction.*;
 import javax.transaction.xa.XAResource;
+import java.sql.Connection;
 
-public abstract class XAResourceProxy extends AbstractXAResourceProxy implements XAResource {
+public abstract class XAResourceProxy extends AbstractXAResourceProxy implements XAResource, Synchronization {
 
-    private TransactionManager transactionManager;
+    private Connection connection;
     private Transaction transaction;
+    private TransactionManager transactionManager;
 
     protected XAResourceProxy(XAResource delegate, XAConnection xaConnection, Object[] argumentArray) {
         super(delegate, xaConnection, argumentArray);
     }
 
-    public TransactionManager getTransactionManager() {
-        return transactionManager;
+    public void afterCompletion(int status) {
+
     }
 
-    public void setTransactionManager(TransactionManager transactionManager) throws SystemException, RollbackException {
-        this.transactionManager = transactionManager;
+    public void beforeCompletion() {
+
+    }
+
+    public void enlistResource() throws SystemException, RollbackException {
         this.transaction = this.transactionManager.getTransaction();
+        this.transaction.registerSynchronization(this);
         this.transaction.enlistResource(this);
+    }
+
+    public Connection getConnection() {
+        return connection;
+    }
+
+    public void setConnection(Connection connection) {
+        this.connection = connection;
     }
 
     public Transaction getTransaction() {
         return transaction;
     }
 
-    public void setTransaction(Transaction transaction) {
-        this.transaction = transaction;
+    public TransactionManager getTransactionManager() {
+        return transactionManager;
+    }
+
+    public void setTransactionManager(TransactionManager transactionManager) {
+        this.transactionManager = transactionManager;
     }
 
 }
