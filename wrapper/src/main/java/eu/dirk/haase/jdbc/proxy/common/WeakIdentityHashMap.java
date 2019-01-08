@@ -1,5 +1,6 @@
 package eu.dirk.haase.jdbc.proxy.common;
 
+import java.io.Serializable;
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.SoftReference;
 import java.lang.ref.WeakReference;
@@ -15,13 +16,24 @@ import java.util.function.Supplier;
 /**
  * Diese {@link Map}-Implementation vereinigt die besonderen Eigenschaften einer
  * {@link IdentityHashMap} mit den besonderen Eigenschaften einer {@link WeakHashMap}.
+ * <p>
+ * <b>Hinweis zur Serialisierung:</b>
+ * Als Objekt wird stets eine leere Map serialisiert, da die serialisierten
+ * Schl&uuml;ssel mit ihren Werten eine neue Identit&auml;t erhalten und dann
+ * nicht mehr abgefragt werden k&ouml;nnten. Interessant ist hier bei, das die
+ * {@link IdentityHashMap} im Gegensatz dazu auch alle Eintr&auml;ge serialisiert.
+ * Daraus kann eigentlich nur folgen, das die Eintr&auml;ge einer serialisierten
+ * {@link IdentityHashMap} nur &uuml;ber die {@link IdentityHashMap#keySet()}-,
+ * {@link IdentityHashMap#values()}- und {@link IdentityHashMap#entrySet}-Methoden
+ * erreichbar sind.
  *
- * @see java.util.IdentityHashMap
- * @see java.util.WeakHashMap
- * @see java.lang.ref.WeakReference
- * @see java.lang.ref.SoftReference
+ * @see IdentityHashMap
+ * @see WeakHashMap
+ * @see WeakReference
+ * @see SoftReference
  */
-public class WeakIdentityHashMap<K, V> extends AbstractMap<K, V> implements Map<K, V>, ModificationStampingObject {
+public class WeakIdentityHashMap<K, V> extends AbstractMap<K, V> implements Map<K, V>, ModificationStampingObject, Serializable {
+    private static final long serialVersionUID = 0L;
     private static final double DEFAULT_LOAD_FACTOR = 0.75f;
     private static final int DEFAULT_SIZE = 16;
     private static final int MILLI = 1000;
@@ -621,6 +633,18 @@ public class WeakIdentityHashMap<K, V> extends AbstractMap<K, V> implements Map<
             valuesCollection = new ValueCollection<>();
         }
         return valuesCollection;
+    }
+
+    /**
+     * Als serialisiertes Objekt wird stets eine leere Map geliefert.
+     *
+     * @return eine leere Map geliefert.
+     * @throws java.io.ObjectStreamException
+     */
+    private Object writeReplace()
+            throws java.io.ObjectStreamException {
+        final double loadFactor = loadFactorMillis / MILLI;
+        return new WeakIdentityHashMap(DEFAULT_SIZE, loadFactor);
     }
 
     /**
