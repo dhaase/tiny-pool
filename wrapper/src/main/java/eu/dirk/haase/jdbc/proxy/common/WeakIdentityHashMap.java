@@ -157,7 +157,7 @@ public class WeakIdentityHashMap<K, V> extends AbstractMap<K, V> implements Map<
      *     V newValue;
      *     return ((currValue = get(key)) == null &&
      *             (newValue = mappingFunction.apply(key)) != null &&
-     *             (currValue = putIfAbsent(stampedLock, key, newValue)) == null) ? newValue : currValue;
+     *             (currValue = computeIfAbsent(stampedLock, key, newValue)) == null) ? newValue : currValue;
      * }
      * </code></pre>
      * <p>

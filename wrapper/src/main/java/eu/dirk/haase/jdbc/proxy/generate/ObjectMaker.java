@@ -1,5 +1,6 @@
 package eu.dirk.haase.jdbc.proxy.generate;
 
+import java.lang.reflect.Constructor;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -10,6 +11,7 @@ public class ObjectMaker implements BiFunction<Object, Object[], Object> {
 
     private final Class<?> implClass;
     private final Object parentObject;
+
 
     public ObjectMaker(final Class<?> implClass, final Object parentObject) {
         this.implClass = implClass;
@@ -23,11 +25,16 @@ public class ObjectMaker implements BiFunction<Object, Object[], Object> {
                 if (isClosed(delegate)) {
                     throw new IllegalStateException("Instance is already closed: " + delegate.getClass());
                 }
-                return implClass.getDeclaredConstructors()[0].newInstance(delegate, parentObject, argumentArray);
+                final Constructor<?>[] declaredConstructors = implClass.getDeclaredConstructors();
+                if (declaredConstructors.length == 1) {
+                    return declaredConstructors[0].newInstance(delegate, parentObject, argumentArray);
+                } else {
+                    throw new IllegalStateException("Only one constructor expected, but " + implClass + " has " + declaredConstructors.length);
+                }
             } catch (RuntimeException re) {
                 throw re;
-            } catch (Exception e) {
-                throw new IllegalStateException(e);
+            } catch (Exception ex) {
+                throw new IllegalStateException(ex.toString(), ex);
             }
         } else {
             throw new IllegalStateException("Can not wrap twice: " + implClass);

@@ -77,7 +77,12 @@ public class ConcurrentMapFunktions<M extends Map<K, V> & ModificationStampingOb
      * Wenn also &uuml;berwiegend zu dem angegebenen Schl&uuml;ssel sich in der Map bereits
      * ein entsprechender Wert befindet.
      * <p>
-     * Diese Methode ist &auml;quivalent zu dem Folgenden Code implementiert:
+     * <b>1. Hinweis:</b> Der Thread der diese Methode ausf&uuml;hrt darf nicht schon bereits
+     * in Besitz einer Lese- oder Schreibsperre sein (siehe ersten Parameter).
+     * <p>
+     * <b>2. Hinweis:</b> Die Mapping-Function (der dritte Parameter) wird vor paralleler Ausf&uuml;hrung
+     * nicht gesch&uuml;tzt. Es ist daher m&ouml;glich, das die Mapping-Function gleichzeitig von
+     * mehreren Threads ausgef&uuml;hrt wird.
      *
      * @param stampedLock       die Sperre mit der die Schreib-/ Lese-Synchronisation erfolgt.
      * @param key               der Schl&uuml;ssel mit dem der Wert aus der Funktion zugeordnet werden soll.
@@ -95,8 +100,8 @@ public class ConcurrentMapFunktions<M extends Map<K, V> & ModificationStampingOb
         try {
             inOutStamp[0] = tryReadLock(stampedLock);
             V oldValue = delegate.get(key);
-            for (; ; ) {
-                V newValue = remappingFunction.apply(key, oldValue);
+            while (true) {
+                final V newValue = remappingFunction.apply(key, oldValue);
                 if (newValue == null) {
                     // delete mapping
                     if (oldValue != null || delegate.containsKey(key)) {
@@ -123,7 +128,7 @@ public class ConcurrentMapFunktions<M extends Map<K, V> & ModificationStampingOb
                         oldValue = delegate.get(key);
                     } else {
                         // add (replace if oldValue was null)
-                        if ((oldValue = putIfAbsent(stampedLock, inOutStamp, key, newValue)) == null) {
+                        if ((oldValue = computeIfAbsent(stampedLock, inOutStamp, key, (k) -> newValue, (v) -> true)) == null) {
                             // replaced
                             return newValue;
                         }
@@ -161,8 +166,12 @@ public class ConcurrentMapFunktions<M extends Map<K, V> & ModificationStampingOb
      * }
      * </code></pre>
      * <p>
-     * Hinweis: Der Thread der diese Methode ausf&uuml;hrt darf nicht schon bereits
-     * in Besitz eines Read- oder Write-Lock sein.
+     * <b>1. Hinweis:</b> Der Thread der diese Methode ausf&uuml;hrt darf nicht schon bereits
+     * in Besitz einer Lese- oder Schreibsperre sein (siehe ersten Parameter).
+     * <p>
+     * <b>2. Hinweis:</b> Die Mapping-Function (der dritte Parameter) wird nur dann ausgef&uuml;hrt wenn
+     * eine exklusive Schreibsperre gesetzt werden konnte. Es ist daher sichergestellt, das die
+     * Mapping-Function gleichzeitig stets nur von einem Threads ausgef&uuml;hrt wird.
      *
      * @param stampedLock     die Sperre mit der die Schreib-/ Lese-Synchronisation erfolgt.
      * @param key             der Schl&uuml;ssel mit dem der Wert aus der Funktion zugeordnet werden soll.
@@ -179,11 +188,9 @@ public class ConcurrentMapFunktions<M extends Map<K, V> & ModificationStampingOb
         final long[] inOutStamp = {INVALID_STAMP};
         try {
             inOutStamp[0] = tryReadLock(stampedLock);
-            V currValue;
-            V newValue;
-            return ((currValue = delegate.get(key)) == null &&
-                    (newValue = mappingFunction.apply(key)) != null &&
-                    (currValue = putIfAbsent(stampedLock, inOutStamp, key, newValue)) == null) ? newValue : currValue;
+            final V currValue = delegate.get(key);
+            final Predicate<V> mapCondition = (v) -> v != null;
+            return (currValue == null ? computeIfAbsent(stampedLock, inOutStamp, key, mappingFunction, mapCondition) : currValue);
         } finally {
             if (inOutStamp[0] != INVALID_STAMP) {
                 stampedLock.unlock(inOutStamp[0]); // Read- oder Write-Lock
@@ -200,8 +207,8 @@ public class ConcurrentMapFunktions<M extends Map<K, V> & ModificationStampingOb
      * Wenn also &uuml;berwiegend zu dem angegebenen Schl&uuml;ssel sich in der Map bereits
      * ein entsprechender Wert befindet.
      * <p>
-     * Hinweis: Der Thread der diese Methode ausf&uuml;hrt darf nicht schon bereits
-     * in Besitz eines Read- oder Write-Lock sein. Andernfalls
+     * <b>Hinweis:</b> Der Thread der diese Methode ausf&uuml;hrt darf nicht schon bereits
+     * in Besitz einer Lese- oder Schreibsperre sein (siehe ersten Parameter).
      *
      * @param stampedLock       die Sperre mit der die Schreib-/ Lese-Synchronisation erfolgt.
      * @param key               der Schl&uuml;ssel mit dem der Wert aus der Funktion zugeordnet werden soll.
@@ -246,8 +253,8 @@ public class ConcurrentMapFunktions<M extends Map<K, V> & ModificationStampingOb
      * Wenn also &uuml;berwiegend zu dem angegebenen Schl&uuml;ssel sich in der Map bereits
      * ein entsprechender Wert befindet.
      * <p>
-     * Hinweis: Der Thread der diese Methode ausf&uuml;hrt darf nicht schon bereits
-     * in Besitz eines Read- oder Write-Lock sein. Andernfalls
+     * <b>Hinweis:</b> Der Thread der diese Methode ausf&uuml;hrt darf nicht schon bereits
+     * in Besitz einer Lese- oder Schreibsperre sein (siehe ersten Parameter).
      *
      * @param stampedLock       die Sperre mit der die Schreib-/ Lese-Synchronisation erfolgt.
      * @param key               der Schl&uuml;ssel mit dem der Wert aus der Funktion zugeordnet werden soll.
@@ -277,7 +284,7 @@ public class ConcurrentMapFunktions<M extends Map<K, V> & ModificationStampingOb
                     }
                     oldValue = delegate.get(key);
                 } else {
-                    if ((oldValue = putIfAbsent(stampedLock, inOutStamp, key, value)) == null) {
+                    if ((oldValue = computeIfAbsent(stampedLock, inOutStamp, key, (k) -> value, (v) -> true)) == null) {
                         return value;
                     }
                 }
@@ -298,9 +305,9 @@ public class ConcurrentMapFunktions<M extends Map<K, V> & ModificationStampingOb
      * Wenn also &uuml;berwiegend zu dem angegebenen Schl&uuml;ssel sich in der Map bereits
      * ein entsprechender Wert befindet.
      * <p>
-     * Hinweis: Der Thread der diese Methode ausf&uuml;hrt darf nicht schon bereits
-     * in Besitz eines Read- oder Write-Lock sein.
-     *
+     * <b>Hinweis:</b> Der Thread der diese Methode ausf&uuml;hrt darf nicht schon bereits
+     * in Besitz einer Lese- oder Schreibsperre sein (siehe ersten Parameter).
+      *
      * @param stampedLock die Sperre mit der die Schreib-/ Lese-Synchronisation erfolgt.
      * @param key         der Schl&uuml;ssel mit dem der Wert aus der Funktion zugeordnet werden soll.
      * @param newValue    der neue Wert die dem Schl&uuml;ssel zugeordnet werden soll wenn (noch) kein
@@ -314,7 +321,7 @@ public class ConcurrentMapFunktions<M extends Map<K, V> & ModificationStampingOb
         final long[] inOutStamp = {INVALID_STAMP};
         try {
             inOutStamp[0] = tryReadLock(stampedLock);
-            return putIfAbsent(stampedLock, inOutStamp, key, newValue);
+            return computeIfAbsent(stampedLock, inOutStamp, key, (k) -> newValue, (v) -> true);
         } finally {
             if (inOutStamp[0] != INVALID_STAMP) {
                 stampedLock.unlock(inOutStamp[0]); // Read- oder Write-Lock
@@ -326,27 +333,36 @@ public class ConcurrentMapFunktions<M extends Map<K, V> & ModificationStampingOb
      * Eine Implementation von {@link Map#putIfAbsent(Object, Object)} die nebenl&auml;fig
      * aufgerufen werden kann.
      * <p>
-     * Diese Methode wird intern von {@link #putIfAbsent(StampedLock, Object, Object)}
+     * Diese Methode wird intern von {@link #computeIfAbsent(StampedLock, Object, Function)}
      * aufgerufen und erwartet das bei Aufruf bereits eine Lese-Sperre gesetzt ist.
      * <p>
      * Diese Methode ist optimiert f&uuml;r Situationen wo die Lese-Operationen im Verh&auml;ltnis
      * zu den Schreib-Operationen h&auml;ufiger erfolgreich aufgerufen werden k&ouml;nnen.
      * Wenn also &uuml;berwiegend zu dem angegebenen Schl&uuml;ssel sich in der Map bereits
      * ein entsprechender Wert befindet.
+     * <p>
+     * <b>1. Hinweis:</b> Die Mapping-Function (der dritte Parameter) wird nur dann ausgef&uuml;hrt wenn
+     * eine exklusive Schreibsperre gesetzt werden konnte. Es ist daher sichergestellt, das die
+     * Mapping-Function gleichzeitig stets nur von einem Threads ausgef&uuml;hrt wird.
+     * <p>
+     * <b>2. Hinweis:</b> Diese Methode nur ausgef&uuml;hrt werden wenn bereits einer Lesesperre gesetzt
+     * wurde (siehe zweiter Parameter).
      *
-     * @param stampedLock die Sperre mit der die Schreib-/ Lese-Synchronisation erfolgt.
-     * @param inOutStamp  ein Array mit einem Lock-Stempel der bei Aufruf einen Read-Stempel enthalten
-     *                    muss und nach der R&uuml;ckkehr einen m&ouml;glicherweise neuen Lock-Stempel
-     *                    enth&auml;lt der anschliessend freigegeben werden muss.
-     * @param key         der Schl&uuml;ssel mit dem der Wert aus der Funktion zugeordnet werden soll.
-     * @param newValue    der neue Wert die dem Schl&uuml;ssel zugeordnet werden soll wenn (noch) kein
-     *                    Wert zu dem angegebenen Schl&uuml;ssel existiert.
+     * @param stampedLock     die Sperre mit der die Schreib-/ Lese-Synchronisation erfolgt.
+     * @param inOutStamp      ein Array mit einem Lock-Stempel der bei Aufruf einen Read-Stempel enthalten
+     *                        muss und nach der R&uuml;ckkehr einen m&ouml;glicherweise neuen Lock-Stempel
+     *                        enth&auml;lt der anschliessend freigegeben werden muss.
+     * @param key             der Schl&uuml;ssel mit dem der Wert aus der Funktion zugeordnet werden soll.
+     * @param mappingFunction die Funktion die den Wert passend zum Schl&uuml;ssel liefert und zugeordnet
+     *                        werden soll wenn (noch) kein Wert zu dem angegebenen Schl&uuml;ssel existiert.
+     * @param mapCondition    Bedingung die der neue Wert erf&uuml;llen muss damit er dem Schl&uuml;ssel
+     *                        zugeordnet werden soll.
      * @return der Wert mit dem der Schl&uuml;ssel zugeordnet wurde.
      * @throws InterruptedException wenn der aktuelle Thread durch {@link Thread#interrupt()} unterbrochen
      *                              wurde.
      * @throws TimeoutException     der Lock konnte nicht rechtzeitig in vorgegebener Zeit angefordert werden.
      */
-    private V putIfAbsent(final StampedLock stampedLock, final long[] inOutStamp, K key, V newValue) throws InterruptedException, TimeoutException {
+    private V computeIfAbsent(final StampedLock stampedLock, final long[] inOutStamp, K key, final Function<? super K, ? extends V> mappingFunction, final Predicate<V> mapCondition) throws InterruptedException, TimeoutException {
         V currValue = delegate.get(key);
         final Predicate<V> condition = (v) -> (v != null);
         // Zuerst eine Pruefung ob ein Schreib-Zugriff notwendig ist:
@@ -358,7 +374,13 @@ public class ConcurrentMapFunktions<M extends Map<K, V> & ModificationStampingOb
                 final long writeStamp = stampedLock.tryConvertToWriteLock(inOutStamp[0]);
                 if (writeStamp != INVALID_STAMP) {
                     inOutStamp[0] = writeStamp;
-                    return delegate.put(key, newValue);
+                    final V newValue = mappingFunction.apply(key);
+                    if (mapCondition.test(newValue)) {
+                        delegate.put(key, newValue);
+                        return newValue;
+                    } else {
+                        return null;
+                    }
                 } else if (retry++ >= RETRIES) {
                     // Fallback: Die Konvertierung der Lese-Sperre zu einer
                     // Schreib-Sperre hat nicht funktioniert.
@@ -396,8 +418,8 @@ public class ConcurrentMapFunktions<M extends Map<K, V> & ModificationStampingOb
      * Wenn also &uuml;berwiegend zu dem angegebenen Schl&uuml;ssel sich in der Map bereits
      * ein entsprechender Wert befindet.
      * <p>
-     * Hinweis: Der Thread der diese Methode ausf&uuml;hrt darf nicht schon bereits
-     * in Besitz eines Read- oder Write-Lock sein.
+     * <b>Hinweis:</b> Der Thread der diese Methode ausf&uuml;hrt darf nicht schon bereits
+     * in Besitz einer Lese- oder Schreibsperre sein (siehe ersten Parameter).
      *
      * @param stampedLock die Sperre mit der die Schreib-/ Lese-Synchronisation erfolgt.
      * @param key         der Schl&uuml;ssel mit dem der Wert aus der Funktion zugeordnet werden soll.
@@ -430,6 +452,9 @@ public class ConcurrentMapFunktions<M extends Map<K, V> & ModificationStampingOb
      * zu den Schreib-Operationen h&auml;ufiger erfolgreich aufgerufen werden k&ouml;nnen.
      * Wenn also &uuml;berwiegend zu dem angegebenen Schl&uuml;ssel sich in der Map bereits
      * ein entsprechender Wert befindet.
+     * <p>
+     * <b>Hinweis:</b> Diese Methode nur ausgef&uuml;hrt werden wenn bereits einer Lesesperre gesetzt
+     * wurde (siehe zweiter Parameter).
      *
      * @param stampedLock die Sperre mit der die Schreib-/ Lese-Synchronisation erfolgt.
      * @param inOutStamp  ein Array mit einem Lock-Stempel der bei Aufruf einen Read-Stempel enthalten
@@ -495,8 +520,8 @@ public class ConcurrentMapFunktions<M extends Map<K, V> & ModificationStampingOb
      * Wenn also &uuml;berwiegend zu dem angegebenen Schl&uuml;ssel sich in der Map bereits
      * ein entsprechender Wert befindet.
      * <p>
-     * Hinweis: Der Thread der diese Methode ausf&uuml;hrt darf nicht schon bereits
-     * in Besitz eines Read- oder Write-Lock sein.
+     * <b>Hinweis:</b> Der Thread der diese Methode ausf&uuml;hrt darf nicht schon bereits
+     * in Besitz einer Lese- oder Schreibsperre sein (siehe ersten Parameter).
      *
      * @param stampedLock der Lock mit dem die Schreib-/ Lese-Synchronisation erfolgt.
      * @param key         der Schl&uuml;ssel mit dem der Wert aus der Funktion zugeordnet werden soll.
@@ -529,8 +554,8 @@ public class ConcurrentMapFunktions<M extends Map<K, V> & ModificationStampingOb
      * Wenn also &uuml;berwiegend zu dem angegebenen Schl&uuml;ssel sich in der Map bereits
      * ein entsprechender Wert befindet.
      * <p>
-     * Hinweis: Der Thread der diese Methode ausf&uuml;hrt darf nicht schon bereits
-     * in Besitz eines Read- oder Write-Lock sein.
+     * <b>Hinweis:</b> Der Thread der diese Methode ausf&uuml;hrt darf nicht schon bereits
+     * in Besitz einer Lese- oder Schreibsperre sein (siehe ersten Parameter).
      *
      * @param stampedLock der Lock mit dem die Schreib-/ Lese-Synchronisation erfolgt.
      * @param key         der Schl&uuml;ssel mit dem der Wert aus der Funktion zugeordnet werden soll.
@@ -564,6 +589,9 @@ public class ConcurrentMapFunktions<M extends Map<K, V> & ModificationStampingOb
      * zu den Schreib-Operationen h&auml;ufiger erfolgreich aufgerufen werden k&ouml;nnen.
      * Wenn also &uuml;berwiegend zu dem angegebenen Schl&uuml;ssel sich in der Map bereits
      * ein entsprechender Wert befindet.
+     * <p>
+     * <b>Hinweis:</b> Diese Methode nur ausgef&uuml;hrt werden wenn bereits einer Lesesperre gesetzt
+     * wurde (siehe zweiter Parameter).
      *
      * @param stampedLock der Lock mit dem die Schreib-/ Lese-Synchronisation erfolgt.
      * @param inOutStamp  ein Array mit einem Sperren-Stempel der bei Aufruf einen Lese-Stempel enthalten
@@ -631,6 +659,9 @@ public class ConcurrentMapFunktions<M extends Map<K, V> & ModificationStampingOb
      * zu den Schreib-Operationen h&auml;ufiger erfolgreich aufgerufen werden k&ouml;nnen.
      * Wenn also &uuml;berwiegend zu dem angegebenen Schl&uuml;ssel sich in der Map bereits
      * ein entsprechender Wert befindet.
+     * <p>
+     * <b>Hinweis:</b> Diese Methode nur ausgef&uuml;hrt werden wenn bereits einer Lesesperre gesetzt
+     * wurde (siehe zweiter Parameter).
      *
      * @param stampedLock der Lock mit dem die Schreib-/ Lese-Synchronisation erfolgt.
      * @param inOutStamp  ein Array mit einem Sperren-Stempel der bei Aufruf einen Lese-Stempel enthalten
@@ -693,6 +724,13 @@ public class ConcurrentMapFunktions<M extends Map<K, V> & ModificationStampingOb
      * zu den Schreib-Operationen h&auml;ufiger erfolgreich aufgerufen werden k&ouml;nnen.
      * Wenn also &uuml;berwiegend zu dem angegebenen Schl&uuml;ssel sich in der Map bereits
      * ein entsprechender Wert befindet.
+     * <p>
+     * <b>1. Hinweis:</b> Der Thread der diese Methode ausf&uuml;hrt darf nicht schon bereits
+     * in Besitz einer Lese- oder Schreibsperre sein (siehe ersten Parameter).
+     * <p>
+     * <b>2. Hinweis:</b> Die Mapping-Function (der dritte Parameter) wird vor paralleler Ausf&uuml;hrung
+     * nicht gesch&uuml;tzt. Es ist daher m&ouml;glich, das die Mapping-Function gleichzeitig von
+     * mehreren Threads ausgef&uuml;hrt wird.
      *
      * @param stampedLock       der Lock mit dem die Schreib-/ Lese-Synchronisation erfolgt.
      * @param remappingFunction die Funktion die den neuen Wert passend zum Schl&uuml;ssel liefert.
