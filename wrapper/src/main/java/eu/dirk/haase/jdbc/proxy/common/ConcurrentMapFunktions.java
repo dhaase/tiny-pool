@@ -5,9 +5,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.StampedLock;
-import java.util.function.BiConsumer;
-import java.util.function.BiFunction;
-import java.util.function.Function;
+import java.util.function.*;
 
 /**
  * Implementiert einige Map-Methoden, wie zum Beispiel
@@ -107,7 +105,6 @@ public class ConcurrentMapFunktions<M extends Map<K, V> & ModificationStampingOb
                             // removed the old value as expected
                             return null;
                         }
-
                         // some other value replaced old value. try again.
                         oldValue = delegate.get(key);
                     } else {
@@ -122,7 +119,6 @@ public class ConcurrentMapFunktions<M extends Map<K, V> & ModificationStampingOb
                             // replaced as expected.
                             return newValue;
                         }
-
                         // some other value replaced old value. try again.
                         oldValue = delegate.get(key);
                     } else {
@@ -131,7 +127,6 @@ public class ConcurrentMapFunktions<M extends Map<K, V> & ModificationStampingOb
                             // replaced
                             return newValue;
                         }
-
                         // some other value replaced old value. try again.
                     }
                 }
@@ -175,7 +170,7 @@ public class ConcurrentMapFunktions<M extends Map<K, V> & ModificationStampingOb
      * @return der Wert mit dem der Schl&uuml;ssel zugeordnet wurde.
      * @throws InterruptedException wenn der aktuelle Thread durch {@link Thread#interrupt()} unterbrochen
      *                              wurde.
-     * @throws TimeoutException     der Lock konnte nicht rechtzeitig in vorgegebener Zeit angefordert werden.
+     * @throws TimeoutException     der Lock konnte nicht re chtzeitig in vorgegebener Zeit angefordert werden.
      */
     public V computeIfAbsent(final StampedLock stampedLock,
                              final K key,
@@ -270,7 +265,7 @@ public class ConcurrentMapFunktions<M extends Map<K, V> & ModificationStampingOb
         try {
             inOutStamp[0] = tryReadLock(stampedLock);
             V oldValue = delegate.get(key);
-            for (; ; ) {
+            while (true) {
                 if (oldValue != null) {
                     V newValue = remappingFunction.apply(oldValue, value);
                     if (newValue != null) {
@@ -353,8 +348,11 @@ public class ConcurrentMapFunktions<M extends Map<K, V> & ModificationStampingOb
      */
     private V putIfAbsent(final StampedLock stampedLock, final long[] inOutStamp, K key, V newValue) throws InterruptedException, TimeoutException {
         V currValue = delegate.get(key);
+        final Predicate<V> condition = (v) -> (v != null);
         // Zuerst eine Pruefung ob ein Schreib-Zugriff notwendig ist:
-        if (currValue == null) {
+        if (condition.test(currValue)) {
+            return currValue;
+        } else {
             int retry = 0;
             while (true) {
                 final long writeStamp = stampedLock.tryConvertToWriteLock(inOutStamp[0]);
@@ -380,14 +378,13 @@ public class ConcurrentMapFunktions<M extends Map<K, V> & ModificationStampingOb
                         currValue = delegate.get(key);
                         // Daher wird die Pruefung hier wiederholt (identisch
                         // mit der Eingangs-Pruefung):
-                        if (currValue != null) {
+                        if (condition.test(currValue)) {
                             return currValue;
                         }
                     }
                 }
             }
         }
-        return currValue;
     }
 
     /**
@@ -447,8 +444,9 @@ public class ConcurrentMapFunktions<M extends Map<K, V> & ModificationStampingOb
      */
     private boolean remove(final StampedLock stampedLock, final long[] inOutStamp, final Object key, final Object value) throws InterruptedException, TimeoutException {
         V currValue = delegate.get(key);
+        final TriPredicate<V, Object, Object> condition = (a, b, c) -> (!Objects.equals(a, b) || (a == null && !delegate.containsKey(c)));
         // Zuerst eine Pruefung ob ein Schreib-Zugriff notwendig ist:
-        if (!Objects.equals(currValue, value) || (currValue == null && !delegate.containsKey(key))) {
+        if (condition.test(currValue, value, key)) {
             return false;
         } else {
             int retry = 0;
@@ -479,7 +477,7 @@ public class ConcurrentMapFunktions<M extends Map<K, V> & ModificationStampingOb
                         currValue = delegate.get(key);
                         // Daher wird die Pruefung hier wiederholt (identisch
                         // mit der Eingangs-Pruefung):
-                        if (!Objects.equals(currValue, value) || (currValue == null && !delegate.containsKey(key))) {
+                        if (condition.test(currValue, value, key)) {
                             return false;
                         }
                     }
@@ -582,9 +580,9 @@ public class ConcurrentMapFunktions<M extends Map<K, V> & ModificationStampingOb
      */
     private boolean replace(final StampedLock stampedLock, final long[] inOutStamp, K key, V oldValue, V newValue) throws InterruptedException, TimeoutException {
         V currValue = delegate.get(key);
+        final TriPredicate<V, Object, Object> condition = (a, b, c) -> (!Objects.equals(a, b) || ((a == null) && !delegate.containsKey(c)));
         // Zuerst eine Pruefung ob ein Schreib-Zugriff notwendig ist:
-        if (!Objects.equals(currValue, oldValue) ||
-                (currValue == null && !delegate.containsKey(key))) {
+        if (condition.test(currValue, oldValue, key)) {
             return false;
         } else {
             int retry = 0;
@@ -613,7 +611,7 @@ public class ConcurrentMapFunktions<M extends Map<K, V> & ModificationStampingOb
                         currValue = delegate.get(key);
                         // Daher wird die Pruefung hier wiederholt (identisch
                         // mit der Eingangs-Pruefung):
-                        if (!Objects.equals(currValue, oldValue) || (currValue == null && !delegate.containsKey(key))) {
+                        if (condition.test(currValue, oldValue, key)) {
                             return false;
                         }
                     }
@@ -648,8 +646,9 @@ public class ConcurrentMapFunktions<M extends Map<K, V> & ModificationStampingOb
      */
     private V replace(final StampedLock stampedLock, final long[] inOutStamp, K key, V newValue) throws InterruptedException, TimeoutException {
         V currValue = delegate.get(key);
+        final BiPredicate<V, Object> condition = (a, b) -> (a == null && !delegate.containsKey(b));
         // Zuerst eine Pruefung ob ein Schreib-Zugriff notwendig ist:
-        if (currValue == null && !delegate.containsKey(key)) {
+        if (condition.test(currValue, key)) {
             return null;
         } else {
             int retry = 0;
@@ -677,7 +676,7 @@ public class ConcurrentMapFunktions<M extends Map<K, V> & ModificationStampingOb
                         currValue = delegate.get(key);
                         // Daher wird die Pruefung hier wiederholt (identisch
                         // mit der Eingangs-Pruefung):
-                        if (currValue == null && !delegate.containsKey(key)) {
+                        if (condition.test(currValue, key)) {
                             return null;
                         }
                     }
@@ -783,4 +782,15 @@ public class ConcurrentMapFunktions<M extends Map<K, V> & ModificationStampingOb
         return writeStamp;
     }
 
+    /**
+     * Repr&auml;sentiert ein Pr&auml;dikat (boolesche Funktion) mit drei Argumenten.
+     *
+     * @param <A> der generische Typ des ersten Agruments.
+     * @param <B> der generische Typ des zweiten Agruments.
+     * @param <C> der generische Typ des dritten Agruments.
+     */
+    @FunctionalInterface
+    interface TriPredicate<A, B, C> {
+        boolean test(A a, B b, C c);
+    }
 }
