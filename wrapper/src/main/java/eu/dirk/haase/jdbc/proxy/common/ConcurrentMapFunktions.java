@@ -80,9 +80,9 @@ public class ConcurrentMapFunktions<M extends Map<K, V> & ModificationStampingOb
      * <b>1. Hinweis:</b> Der Thread der diese Methode ausf&uuml;hrt darf nicht schon bereits
      * in Besitz einer Lese- oder Schreibsperre sein (siehe ersten Parameter).
      * <p>
-     * <b>2. Hinweis:</b> Die Mapping-Function (der dritte Parameter) wird vor paralleler Ausf&uuml;hrung
-     * nicht gesch&uuml;tzt. Es ist daher m&ouml;glich, das die Mapping-Function gleichzeitig von
-     * mehreren Threads ausgef&uuml;hrt wird.
+     * <b>2. Hinweis:</b> Die Mapping-Function (der dritte Parameter) wird nicht vor paralleler
+     * Ausf&uuml;hrung gesch&uuml;tzt. Es ist daher m&ouml;glich, das die Mapping-Function
+     * gleichzeitig von mehreren Threads ausgef&uuml;hrt wird.
      *
      * @param stampedLock       die Sperre mit der die Schreib-/ Lese-Synchronisation erfolgt.
      * @param key               der Schl&uuml;ssel mit dem der Wert aus der Funktion zugeordnet werden soll.
@@ -207,8 +207,11 @@ public class ConcurrentMapFunktions<M extends Map<K, V> & ModificationStampingOb
      * Wenn also &uuml;berwiegend zu dem angegebenen Schl&uuml;ssel sich in der Map bereits
      * ein entsprechender Wert befindet.
      * <p>
-     * <b>Hinweis:</b> Der Thread der diese Methode ausf&uuml;hrt darf nicht schon bereits
+     * <b>1. Hinweis:</b> Der Thread der diese Methode ausf&uuml;hrt darf nicht schon bereits
      * in Besitz einer Lese- oder Schreibsperre sein (siehe ersten Parameter).
+     * <b>2. Hinweis:</b> Die Mapping-Function (der dritte Parameter) wird nicht vor paralleler
+     * Ausf&uuml;hrung gesch&uuml;tzt. Es ist daher m&ouml;glich, das die Mapping-Function
+     * gleichzeitig von mehreren Threads ausgef&uuml;hrt wird.
      *
      * @param stampedLock       die Sperre mit der die Schreib-/ Lese-Synchronisation erfolgt.
      * @param key               der Schl&uuml;ssel mit dem der Wert aus der Funktion zugeordnet werden soll.
@@ -253,8 +256,11 @@ public class ConcurrentMapFunktions<M extends Map<K, V> & ModificationStampingOb
      * Wenn also &uuml;berwiegend zu dem angegebenen Schl&uuml;ssel sich in der Map bereits
      * ein entsprechender Wert befindet.
      * <p>
-     * <b>Hinweis:</b> Der Thread der diese Methode ausf&uuml;hrt darf nicht schon bereits
+     * <b>1. Hinweis:</b> Der Thread der diese Methode ausf&uuml;hrt darf nicht schon bereits
      * in Besitz einer Lese- oder Schreibsperre sein (siehe ersten Parameter).
+     * <b>2. Hinweis:</b> Die Mapping-Function (der vierte Parameter) wird nicht vor paralleler
+     * Ausf&uuml;hrung gesch&uuml;tzt. Es ist daher m&ouml;glich, das die Mapping-Function
+     * gleichzeitig von mehreren Threads ausgef&uuml;hrt wird.
      *
      * @param stampedLock       die Sperre mit der die Schreib-/ Lese-Synchronisation erfolgt.
      * @param key               der Schl&uuml;ssel mit dem der Wert aus der Funktion zugeordnet werden soll.
@@ -728,9 +734,9 @@ public class ConcurrentMapFunktions<M extends Map<K, V> & ModificationStampingOb
      * <b>1. Hinweis:</b> Der Thread der diese Methode ausf&uuml;hrt darf nicht schon bereits
      * in Besitz einer Lese- oder Schreibsperre sein (siehe ersten Parameter).
      * <p>
-     * <b>2. Hinweis:</b> Die Mapping-Function (der dritte Parameter) wird vor paralleler Ausf&uuml;hrung
-     * nicht gesch&uuml;tzt. Es ist daher m&ouml;glich, das die Mapping-Function gleichzeitig von
-     * mehreren Threads ausgef&uuml;hrt wird.
+     * <b>2. Hinweis:</b> Die Mapping-Function (der dritte Parameter) wird nicht vor paralleler
+     * Ausf&uuml;hrung gesch&uuml;tzt. Es ist daher m&ouml;glich, das die Mapping-Function
+     * gleichzeitig von mehreren Threads ausgef&uuml;hrt wird.
      *
      * @param stampedLock       der Lock mit dem die Schreib-/ Lese-Synchronisation erfolgt.
      * @param remappingFunction die Funktion die den neuen Wert passend zum Schl&uuml;ssel liefert.

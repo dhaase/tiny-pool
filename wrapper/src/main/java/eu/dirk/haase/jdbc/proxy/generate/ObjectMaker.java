@@ -11,6 +11,7 @@ public class ObjectMaker implements BiFunction<Object, Object[], Object> {
 
     private final Class<?> implClass;
     private final Object parentObject;
+    private volatile Constructor<?> declaredConstructor;
 
 
     public ObjectMaker(final Class<?> implClass, final Object parentObject) {
@@ -25,12 +26,7 @@ public class ObjectMaker implements BiFunction<Object, Object[], Object> {
                 if (isClosed(delegate)) {
                     throw new IllegalStateException("Instance is already closed: " + delegate.getClass());
                 }
-                final Constructor<?>[] declaredConstructors = implClass.getDeclaredConstructors();
-                if (declaredConstructors.length == 1) {
-                    return declaredConstructors[0].newInstance(delegate, parentObject, argumentArray);
-                } else {
-                    throw new IllegalStateException("Only one constructor expected, but " + implClass + " has " + declaredConstructors.length);
-                }
+                return getDeclaredConstructor().newInstance(delegate, parentObject, argumentArray);
             } catch (RuntimeException re) {
                 throw re;
             } catch (Exception ex) {
@@ -39,6 +35,18 @@ public class ObjectMaker implements BiFunction<Object, Object[], Object> {
         } else {
             throw new IllegalStateException("Can not wrap twice: " + implClass);
         }
+    }
+
+    private Constructor<?> getDeclaredConstructor() {
+        if (declaredConstructor == null) {
+            final Constructor<?>[] declaredConstructors = implClass.getDeclaredConstructors();
+            if (declaredConstructors.length == 1) {
+                declaredConstructor = declaredConstructors[0];
+            } else {
+                throw new IllegalStateException("Only one constructor expected, but " + implClass + " has " + declaredConstructors.length);
+            }
+        }
+        return declaredConstructor;
     }
 
     private boolean isClosed(Object delegate) throws SQLException {
