@@ -351,7 +351,7 @@ public class ConcurrentMapFunktions<M extends Map<K, V> & ModificationStampingOb
      * eine exklusive Schreibsperre gesetzt werden konnte. Es ist daher sichergestellt, das die
      * Mapping-Function gleichzeitig stets nur von einem Threads ausgef&uuml;hrt wird.
      * <p>
-     * <b>2. Hinweis:</b> Diese Methode nur ausgef&uuml;hrt werden wenn bereits einer Lesesperre gesetzt
+     * <b>Hinweis:</b> Diese Methode darf nur ausgef&uuml;hrt werden, wenn bereits einer Lesesperre gesetzt
      * wurde (siehe zweiter Parameter).
      *
      * @param stampedLock     die Sperre mit der die Schreib-/ Lese-Synchronisation erfolgt.
@@ -459,7 +459,7 @@ public class ConcurrentMapFunktions<M extends Map<K, V> & ModificationStampingOb
      * Wenn also &uuml;berwiegend zu dem angegebenen Schl&uuml;ssel sich in der Map bereits
      * ein entsprechender Wert befindet.
      * <p>
-     * <b>Hinweis:</b> Diese Methode nur ausgef&uuml;hrt werden wenn bereits einer Lesesperre gesetzt
+     * <b>Hinweis:</b> Diese Methode darf nur ausgef&uuml;hrt werden, wenn bereits einer Lesesperre gesetzt
      * wurde (siehe zweiter Parameter).
      *
      * @param stampedLock die Sperre mit der die Schreib-/ Lese-Synchronisation erfolgt.
@@ -596,7 +596,7 @@ public class ConcurrentMapFunktions<M extends Map<K, V> & ModificationStampingOb
      * Wenn also &uuml;berwiegend zu dem angegebenen Schl&uuml;ssel sich in der Map bereits
      * ein entsprechender Wert befindet.
      * <p>
-     * <b>Hinweis:</b> Diese Methode nur ausgef&uuml;hrt werden wenn bereits einer Lesesperre gesetzt
+     * <b>Hinweis:</b> Diese Methode darf nur ausgef&uuml;hrt werden, wenn bereits einer Lesesperre gesetzt
      * wurde (siehe zweiter Parameter).
      *
      * @param stampedLock der Lock mit dem die Schreib-/ Lese-Synchronisation erfolgt.
@@ -666,7 +666,7 @@ public class ConcurrentMapFunktions<M extends Map<K, V> & ModificationStampingOb
      * Wenn also &uuml;berwiegend zu dem angegebenen Schl&uuml;ssel sich in der Map bereits
      * ein entsprechender Wert befindet.
      * <p>
-     * <b>Hinweis:</b> Diese Methode nur ausgef&uuml;hrt werden wenn bereits einer Lesesperre gesetzt
+     * <b>Hinweis:</b> Diese Methode darf nur ausgef&uuml;hrt werden, wenn bereits einer Lesesperre gesetzt
      * wurde (siehe zweiter Parameter).
      *
      * @param stampedLock der Lock mit dem die Schreib-/ Lese-Synchronisation erfolgt.
