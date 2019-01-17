@@ -13,7 +13,7 @@ public abstract class AbstractStatementProxy extends FactoryJdbcProxy<Statement>
     private final Statement delegate;
 
     protected AbstractStatementProxy(final Statement delegate, final Connection connection, final Object[] argumentArray) {
-        super(delegate);
+        super(Statement.class, delegate);
         this.connection = connection;
         this.delegate = delegate;
     }

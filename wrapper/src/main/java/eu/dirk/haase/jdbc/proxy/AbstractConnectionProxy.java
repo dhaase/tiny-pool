@@ -14,7 +14,7 @@ public abstract class AbstractConnectionProxy extends FactoryJdbcProxy<Connectio
     private final Connection delegate;
 
     protected AbstractConnectionProxy(final Connection delegate, final DataSource dataSource, final Object[] argumentArray) throws SQLException {
-        super(delegate);
+        super(Connection.class, delegate);
         this.dataSource = dataSource;
         this.delegate = delegate;
         if (this.delegate.getAutoCommit()) {

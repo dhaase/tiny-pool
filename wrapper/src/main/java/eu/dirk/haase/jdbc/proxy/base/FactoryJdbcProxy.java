@@ -40,8 +40,8 @@ public abstract class FactoryJdbcProxy<T1> extends JdbcProxy<T1> {
      *
      * @param delegate das zugrundeliegende JDBC-Objekt.
      */
-    protected FactoryJdbcProxy(final T1 delegate) {
-        this(delegate, new WeakIdentityHashMap<>());
+    protected FactoryJdbcProxy(final Class<T1> type, final T1 delegate) {
+        this(type, delegate, new WeakIdentityHashMap<>());
     }
 
 
@@ -51,8 +51,8 @@ public abstract class FactoryJdbcProxy<T1> extends JdbcProxy<T1> {
      * @param delegate    das zugrundeliegende JDBC-Objekt.
      * @param identityMap eine Map-Implementation als Cache.
      */
-    protected FactoryJdbcProxy(final T1 delegate, final Map<Object, Object> identityMap) {
-        super(delegate);
+    protected FactoryJdbcProxy(final Class<T1> type, final T1 delegate, final Map<Object, Object> identityMap) {
+        super(type, delegate);
         this.identityMap = identityMap;
     }
 

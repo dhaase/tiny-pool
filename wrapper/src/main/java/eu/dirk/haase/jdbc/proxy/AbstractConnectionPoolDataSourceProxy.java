@@ -12,7 +12,7 @@ public abstract class AbstractConnectionPoolDataSourceProxy extends ConcurrentFa
 
 
     protected AbstractConnectionPoolDataSourceProxy(final ConnectionPoolDataSource delegate) {
-        super(delegate);
+        super(ConnectionPoolDataSource.class, delegate);
     }
 
     /**

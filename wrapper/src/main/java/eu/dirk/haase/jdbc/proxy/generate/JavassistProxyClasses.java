@@ -11,6 +11,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 public class JavassistProxyClasses {
 
@@ -32,59 +33,37 @@ public class JavassistProxyClasses {
     private JavassistProxyClassGenerator resultSetGen;
     private CtClass statementCt;
     private JavassistProxyClassGenerator statementGen;
+    private CtClass xaConnectionCt;
+    private JavassistProxyClassGenerator xaConnectionGen;
+    private CtClass xaDataSourceCt;
+    private JavassistProxyClassGenerator xaDataSourceGen;
     private CtClass xaResourceCt;
     private JavassistProxyClassGenerator xaResourceGen;
-    private CtClass xaconnectionCt;
-    private JavassistProxyClassGenerator xaconnectionGen;
-    private CtClass xadataSourceCt;
-    private JavassistProxyClassGenerator xadataSourceGen;
 
     public JavassistProxyClasses(final BiFunction<String, Class<?>, String> classNameFun, final Map<Class<?>, Class<?>> iface2ClassMap) {
         this.iface2ClassMap = new HashMap<>(iface2ClassMap);
 
-        if (iface2ClassMap.containsKey(ResultSet.class)) {
-            this.resultSetGen = new JavassistProxyClassGenerator(classNameFun, ResultSet.class, iface2ClassMap.get(ResultSet.class));
-        }
-        if (iface2ClassMap.containsKey(Connection.class)) {
-            this.connectionGen = new JavassistProxyClassGenerator(classNameFun, Connection.class, iface2ClassMap.get(Connection.class));
-        }
-        if (iface2ClassMap.containsKey(PreparedStatement.class)) {
-            this.preparedStatementGen = new JavassistProxyClassGenerator(classNameFun, PreparedStatement.class, iface2ClassMap.get(PreparedStatement.class));
-        }
-        if (iface2ClassMap.containsKey(CallableStatement.class)) {
-            this.callableStatementGen = new JavassistProxyClassGenerator(classNameFun, CallableStatement.class, iface2ClassMap.get(CallableStatement.class));
-        }
-        if (iface2ClassMap.containsKey(Statement.class)) {
-            this.statementGen = new JavassistProxyClassGenerator(classNameFun, Statement.class, iface2ClassMap.get(Statement.class));
-        }
-        if (iface2ClassMap.containsKey(DataSource.class)) {
-            this.dataSourceGen = new JavassistProxyClassGenerator(classNameFun, DataSource.class, iface2ClassMap.get(DataSource.class));
-        }
-        if (iface2ClassMap.containsKey(XAConnection.class)) {
-            this.xaconnectionGen = new JavassistProxyClassGenerator(classNameFun, XAConnection.class, iface2ClassMap.get(XAConnection.class));
-        }
-        if (iface2ClassMap.containsKey(XADataSource.class)) {
-            this.xadataSourceGen = new JavassistProxyClassGenerator(classNameFun, XADataSource.class, iface2ClassMap.get(XADataSource.class));
-        }
-        if (iface2ClassMap.containsKey(XAResource.class)) {
-            this.xaResourceGen = new JavassistProxyClassGenerator(classNameFun, XAResource.class, iface2ClassMap.get(XAResource.class));
-        }
-        if (iface2ClassMap.containsKey(PooledConnection.class)) {
-            this.pooledConnectionGen = new JavassistProxyClassGenerator(classNameFun, PooledConnection.class, iface2ClassMap.get(PooledConnection.class));
-        }
-        if (iface2ClassMap.containsKey(ConnectionPoolDataSource.class)) {
-            this.connectionPoolDataSourceGen = new JavassistProxyClassGenerator(classNameFun, ConnectionPoolDataSource.class, iface2ClassMap.get(ConnectionPoolDataSource.class));
-        }
+        this.resultSetGen = createIfPresent(ResultSet.class, classNameFun, iface2ClassMap);
+        this.connectionGen = createIfPresent(Connection.class, classNameFun, iface2ClassMap);
+        this.preparedStatementGen = createIfPresent(PreparedStatement.class, classNameFun, iface2ClassMap);
+        this.callableStatementGen = createIfPresent(CallableStatement.class, classNameFun, iface2ClassMap);
+        this.statementGen = createIfPresent(Statement.class, classNameFun, iface2ClassMap);
+        this.dataSourceGen = createIfPresent(DataSource.class, classNameFun, iface2ClassMap);
+        this.xaConnectionGen = createIfPresent(XAConnection.class, classNameFun, iface2ClassMap);
+        this.xaDataSourceGen = createIfPresent(XADataSource.class, classNameFun, iface2ClassMap);
+        this.xaResourceGen = createIfPresent(XAResource.class, classNameFun, iface2ClassMap);
+        this.pooledConnectionGen = createIfPresent(PooledConnection.class, classNameFun, iface2ClassMap);
+        this.connectionPoolDataSourceGen = createIfPresent(ConnectionPoolDataSource.class, classNameFun, iface2ClassMap);
     }
 
-    private CtClass createCallableStatement(CtClass resultSetCt) throws Exception {
-        final Map<String, CtClass> childs3 = new HashMap<>();
+    private CtClass createCallableStatement(CtClass resultSetCt) {
+        final Map<String, CtClass> child = new HashMap<>();
         if (iface2ClassMap.containsKey(ResultSet.class)) {
-            childs3.put("executeQuery", resultSetCt);
-            childs3.put("getResultSet", resultSetCt);
-            childs3.put("getGeneratedKeys", resultSetCt);
+            child.put("executeQuery", resultSetCt);
+            child.put("getResultSet", resultSetCt);
+            child.put("getGeneratedKeys", resultSetCt);
         }
-        return this.callableStatementGen.generate(classPool, Connection.class, childs3);
+        return this.callableStatementGen.generate(classPool, Connection.class, child);
     }
 
     private ClassPool createClassPool() {
@@ -99,169 +78,144 @@ public class JavassistProxyClasses {
         return classPool;
     }
 
-    private CtClass createConnection(CtClass cStatementCt, CtClass pStatementCt, CtClass statementCt) throws Exception {
-        final Map<String, CtClass> childs2 = new HashMap<>();
+    private CtClass createConnection(CtClass cStatementCt, CtClass pStatementCt, CtClass statementCt) {
+        final Map<String, CtClass> child = new HashMap<>();
         if (iface2ClassMap.containsKey(Statement.class)) {
-            childs2.put("createStatement", statementCt);
+            child.put("createStatement", statementCt);
         }
         if (iface2ClassMap.containsKey(PreparedStatement.class)) {
-            childs2.put("prepareStatement", pStatementCt);
+            child.put("prepareStatement", pStatementCt);
         }
         if (iface2ClassMap.containsKey(CallableStatement.class)) {
-            childs2.put("prepareCall", cStatementCt);
+            child.put("prepareCall", cStatementCt);
         }
-        return this.connectionGen.generate(classPool, DataSource.class, childs2);
+        return this.connectionGen.generate(classPool, DataSource.class, child);
     }
 
-    private CtClass createConnectionPoolDataSource(CtClass pooledConnectionCt) throws Exception {
-        final Map<String, CtClass> childsd = new HashMap<>();
+    private CtClass createConnectionPoolDataSource(CtClass pooledConnectionCt) {
+        final Map<String, CtClass> child = new HashMap<>();
         if (iface2ClassMap.containsKey(PooledConnection.class)) {
-            childsd.put("getPooledConnection", pooledConnectionCt);
+            child.put("getPooledConnection", pooledConnectionCt);
         }
-        return this.connectionPoolDataSourceGen.generate(classPool, null, childsd);
+        return this.connectionPoolDataSourceGen.generate(classPool, null, child);
     }
 
-    private CtClass createDataSource(CtClass connectionCt) throws Exception {
-        final Map<String, CtClass> childs1 = new HashMap<>();
+    private CtClass createDataSource(CtClass connectionCt) {
+        final Map<String, CtClass> child = new HashMap<>();
         if (iface2ClassMap.containsKey(Connection.class)) {
-            childs1.put("getConnection", connectionCt);
+            child.put("getConnection", connectionCt);
         }
-        return this.dataSourceGen.generate(classPool, null, childs1);
+        return this.dataSourceGen.generate(classPool, null, child);
     }
 
-    private Map<String, Object> createInterfaceToClassMap(final Function<CtClass, Object> valueFunction) throws Exception {
+    private JavassistProxyClassGenerator createIfPresent(Class<?> iface, final BiFunction<String, Class<?>, String> classNameFun, final Map<Class<?>, Class<?>> iface2ClassMap) {
+        if (iface2ClassMap.containsKey(ConnectionPoolDataSource.class)) {
+            return new JavassistProxyClassGenerator(classNameFun, iface, iface2ClassMap.get(iface));
+        }
+        return null;
+    }
+
+    private CtClass createIfPresent(Class<?> iface, Supplier<CtClass> classCt) {
+        if (iface2ClassMap.containsKey(iface)) {
+            return classCt.get();
+        }
+        return null;
+    }
+
+    private Map<String, Object> createInterfaceToClassMap(final Function<CtClass, Object> valueFunction) {
         final Map<String, Object> interfaceToClassMap = new HashMap<>();
 
-        if (iface2ClassMap.containsKey(ResultSet.class)) {
-            interfaceToClassMap.put(ResultSet.class.getName(), valueFunction.apply(this.resultSetCt));
-        }
-        if (iface2ClassMap.containsKey(CallableStatement.class)) {
-            interfaceToClassMap.put(CallableStatement.class.getName(), valueFunction.apply(this.callableStatementCt));
-        }
-        if (iface2ClassMap.containsKey(PreparedStatement.class)) {
-            interfaceToClassMap.put(PreparedStatement.class.getName(), valueFunction.apply(this.preparedStatementCt));
-        }
-        if (iface2ClassMap.containsKey(Statement.class)) {
-            interfaceToClassMap.put(Statement.class.getName(), valueFunction.apply(this.statementCt));
-        }
-        if (iface2ClassMap.containsKey(Connection.class)) {
-            interfaceToClassMap.put(Connection.class.getName(), valueFunction.apply(this.connectionCt));
-        }
-        if (iface2ClassMap.containsKey(DataSource.class)) {
-            interfaceToClassMap.put(DataSource.class.getName(), valueFunction.apply(this.dataSourceCt));
-        }
-        if (iface2ClassMap.containsKey(XAResource.class)) {
-            interfaceToClassMap.put(XAResource.class.getName(), valueFunction.apply(this.xaResourceCt));
-        }
-        if (iface2ClassMap.containsKey(XAConnection.class)) {
-            interfaceToClassMap.put(XAConnection.class.getName(), valueFunction.apply(this.xaconnectionCt));
-        }
-        if (iface2ClassMap.containsKey(XADataSource.class)) {
-            interfaceToClassMap.put(XADataSource.class.getName(), valueFunction.apply(this.xadataSourceCt));
-        }
-        if (iface2ClassMap.containsKey(PooledConnection.class)) {
-            interfaceToClassMap.put(PooledConnection.class.getName(), valueFunction.apply(this.pooledConnectionCt));
-        }
-        if (iface2ClassMap.containsKey(ConnectionPoolDataSource.class)) {
-            interfaceToClassMap.put(ConnectionPoolDataSource.class.getName(), valueFunction.apply(this.connectionPoolDataSourceCt));
-        }
+        putIfPresent(interfaceToClassMap, ResultSet.class, this.resultSetCt, valueFunction);
+        putIfPresent(interfaceToClassMap, CallableStatement.class, this.callableStatementCt, valueFunction);
+        putIfPresent(interfaceToClassMap, PreparedStatement.class, this.preparedStatementCt, valueFunction);
+        putIfPresent(interfaceToClassMap, Statement.class, this.statementCt, valueFunction);
+        putIfPresent(interfaceToClassMap, Connection.class, this.connectionCt, valueFunction);
+        putIfPresent(interfaceToClassMap, DataSource.class, this.dataSourceCt, valueFunction);
+        putIfPresent(interfaceToClassMap, XAResource.class, this.xaResourceCt, valueFunction);
+        putIfPresent(interfaceToClassMap, XAConnection.class, this.xaConnectionCt, valueFunction);
+        putIfPresent(interfaceToClassMap, XADataSource.class, this.xaDataSourceCt, valueFunction);
+        putIfPresent(interfaceToClassMap, PooledConnection.class, this.pooledConnectionCt, valueFunction);
+        putIfPresent(interfaceToClassMap, ConnectionPoolDataSource.class, this.connectionPoolDataSourceCt, valueFunction);
 
         return interfaceToClassMap;
     }
 
-    private CtClass createPooledConnection(CtClass connectionCt) throws Exception {
-        final Map<String, CtClass> childsc = new HashMap<>();
+    private CtClass createPooledConnection(CtClass connectionCt) {
+        final Map<String, CtClass> child = new HashMap<>();
         if (iface2ClassMap.containsKey(Connection.class)) {
-            childsc.put("getConnection", connectionCt);
+            child.put("getConnection", connectionCt);
         }
-        return this.pooledConnectionGen.generate(classPool, ConnectionPoolDataSource.class, childsc);
+        return this.pooledConnectionGen.generate(classPool, ConnectionPoolDataSource.class, child);
     }
 
-    private CtClass createPreparedStatement(CtClass resultSetCt) throws Exception {
-        final Map<String, CtClass> childs4 = new HashMap<>();
+    private CtClass createPreparedStatement(CtClass resultSetCt) {
+        final Map<String, CtClass> child = new HashMap<>();
         if (iface2ClassMap.containsKey(ResultSet.class)) {
-            childs4.put("executeQuery", resultSetCt);
-            childs4.put("getResultSet", resultSetCt);
-            childs4.put("getGeneratedKeys", resultSetCt);
+            child.put("executeQuery", resultSetCt);
+            child.put("getResultSet", resultSetCt);
+            child.put("getGeneratedKeys", resultSetCt);
         }
-        return this.preparedStatementGen.generate(classPool, Connection.class, childs4);
+        return this.preparedStatementGen.generate(classPool, Connection.class, child);
     }
 
-    private CtClass createResultSet() throws Exception {
+    private CtClass createResultSet() {
         return this.resultSetGen.generate(classPool, Statement.class, new HashMap<>());
     }
 
-    private CtClass createStatement(CtClass resultSetCt) throws Exception {
-        final Map<String, CtClass> childs5 = new HashMap<>();
+    private CtClass createStatement(CtClass resultSetCt) {
+        final Map<String, CtClass> child = new HashMap<>();
         if (iface2ClassMap.containsKey(ResultSet.class)) {
-            childs5.put("executeQuery", resultSetCt);
-            childs5.put("getResultSet", resultSetCt);
-            childs5.put("getGeneratedKeys", resultSetCt);
+            child.put("executeQuery", resultSetCt);
+            child.put("getResultSet", resultSetCt);
+            child.put("getGeneratedKeys", resultSetCt);
         }
-        return this.statementGen.generate(classPool, Connection.class, childs5);
+        return this.statementGen.generate(classPool, Connection.class, child);
     }
 
-    private CtClass createXAConnection(CtClass connectionCt, CtClass xaResourceCt) throws Exception {
-        final Map<String, CtClass> childsa = new HashMap<>();
+    private CtClass createXAConnection(CtClass connectionCt, CtClass xaResourceCt) {
+        final Map<String, CtClass> child = new HashMap<>();
         if (iface2ClassMap.containsKey(Connection.class)) {
-            childsa.put("getConnection", connectionCt);
+            child.put("getConnection", connectionCt);
         }
         if (iface2ClassMap.containsKey(XAResource.class)) {
-            childsa.put("getXAResource", xaResourceCt);
+            child.put("getXAResource", xaResourceCt);
         }
-        return this.xaconnectionGen.generate(classPool, XADataSource.class, childsa);
+        return this.xaConnectionGen.generate(classPool, XADataSource.class, child);
     }
 
-    private CtClass createXADataSource(CtClass xaconnectionCt) throws Exception {
-        final Map<String, CtClass> childsb = new HashMap<>();
+    private CtClass createXADataSource(CtClass xaConnectionCt) {
+        final Map<String, CtClass> child = new HashMap<>();
         if (iface2ClassMap.containsKey(XAConnection.class)) {
-            childsb.put("getXAConnection", xaconnectionCt);
+            child.put("getXAConnection", xaConnectionCt);
         }
-        return this.xadataSourceGen.generate(classPool, null, childsb);
+        return this.xaDataSourceGen.generate(classPool, null, child);
     }
 
-    private CtClass createXAResource() throws Exception {
+    private CtClass createXAResource() {
         return this.xaResourceGen.generate(classPool, XAConnection.class, new HashMap<>());
     }
 
-    public Map<String, Object> generate(final Function<CtClass, Object> valueFunction) throws Exception {
+    public Map<String, Object> generate(final Function<CtClass, Object> valueFunction) {
         this.classPool = createClassPool();
 
-        if (iface2ClassMap.containsKey(ResultSet.class)) {
-            this.resultSetCt = createResultSet();
-        }
-        if (iface2ClassMap.containsKey(CallableStatement.class)) {
-            this.callableStatementCt = createCallableStatement(resultSetCt);
-        }
-        if (iface2ClassMap.containsKey(PreparedStatement.class)) {
-            this.preparedStatementCt = createPreparedStatement(resultSetCt);
-        }
-        if (iface2ClassMap.containsKey(Statement.class)) {
-            this.statementCt = createStatement(resultSetCt);
-        }
-        if (iface2ClassMap.containsKey(Connection.class)) {
-            this.connectionCt = createConnection(callableStatementCt, preparedStatementCt, statementCt);
-        }
-        if (iface2ClassMap.containsKey(DataSource.class)) {
-            this.dataSourceCt = createDataSource(connectionCt);
-        }
-        if (iface2ClassMap.containsKey(XAResource.class)) {
-            this.xaResourceCt = createXAResource();
-        }
-        if (iface2ClassMap.containsKey(XAConnection.class)) {
-            this.xaconnectionCt = createXAConnection(connectionCt, xaResourceCt);
-        }
-        if (iface2ClassMap.containsKey(XADataSource.class)) {
-            this.xadataSourceCt = createXADataSource(xaconnectionCt);
-        }
-        if (iface2ClassMap.containsKey(PooledConnection.class)) {
-            this.pooledConnectionCt = createPooledConnection(connectionCt);
-        }
-        if (iface2ClassMap.containsKey(ConnectionPoolDataSource.class)) {
-            this.connectionPoolDataSourceCt = createConnectionPoolDataSource(pooledConnectionCt);
-        }
+        this.resultSetCt = createIfPresent(ResultSet.class, () -> createResultSet());
+        this.callableStatementCt = createIfPresent(CallableStatement.class, () -> createCallableStatement(resultSetCt));
+        this.preparedStatementCt = createIfPresent(PreparedStatement.class, () -> createPreparedStatement(resultSetCt));
+        this.statementCt = createIfPresent(Statement.class, () -> createStatement(resultSetCt));
+        this.connectionCt = createIfPresent(Connection.class, () -> createConnection(callableStatementCt, preparedStatementCt, statementCt));
+        this.dataSourceCt = createIfPresent(DataSource.class, () -> createDataSource(connectionCt));
+        this.xaResourceCt = createIfPresent(XAResource.class, () -> createXAResource());
+        this.xaConnectionCt = createIfPresent(XAConnection.class, () -> createXAConnection(connectionCt, xaResourceCt));
+        this.xaDataSourceCt = createIfPresent(XADataSource.class, () -> createXADataSource(xaConnectionCt));
+        this.pooledConnectionCt = createIfPresent(PooledConnection.class, () -> createPooledConnection(connectionCt));
+        this.connectionPoolDataSourceCt = createIfPresent(ConnectionPoolDataSource.class, () -> createConnectionPoolDataSource(pooledConnectionCt));
 
         return createInterfaceToClassMap(valueFunction);
     }
 
+    private void putIfPresent(final Map<String, Object> interfaceToClassMap, Class<?> iface, CtClass classCt, final Function<CtClass, Object> valueFunction) {
+        if (iface2ClassMap.containsKey(iface)) {
+            interfaceToClassMap.put(iface.getName(), valueFunction.apply(classCt));
+        }
+    }
 }

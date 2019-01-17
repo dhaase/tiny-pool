@@ -47,8 +47,8 @@ public abstract class ConcurrentFactoryJdbcProxy<M extends Map<Object, Object> &
      * @param delegate das zugrundeliegende JDBC-Objekt.
      */
     @SuppressWarnings("unchecked")
-    protected ConcurrentFactoryJdbcProxy(T1 delegate) {
-        this(delegate, (M) new WeakIdentityHashMap<>(), new StampedLock());
+    protected ConcurrentFactoryJdbcProxy(final Class<T1> type, T1 delegate) {
+        this(type, delegate, (M) new WeakIdentityHashMap<>(), new StampedLock());
     }
 
     /**
@@ -60,8 +60,8 @@ public abstract class ConcurrentFactoryJdbcProxy<M extends Map<Object, Object> &
      * @param stampedLock die {@link StampedLock}-Sperre zur Synchronisation in der
      *                    {@link #wrapConcurrent(Object, BiFunction, Object...)}-Methode.
      */
-    private ConcurrentFactoryJdbcProxy(T1 delegate, final M identityMap, final StampedLock stampedLock) {
-        super(delegate, identityMap);
+    private ConcurrentFactoryJdbcProxy(final Class<T1> type, T1 delegate, final M identityMap, final StampedLock stampedLock) {
+        super(type, delegate, identityMap);
         this.stampedLock = stampedLock;
         this.concurrentMapFunktions = new ConcurrentMapFunktions<>(identityMap);
     }

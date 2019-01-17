@@ -17,8 +17,14 @@ public abstract class JdbcProxy<T1> implements JdbcWrapper {
 
     private final T1 delegate;
 
-    protected JdbcProxy(final T1 delegate) {
+    private final Class<T1> type;
+
+    protected JdbcProxy(final Class<T1> type, final T1 delegate) {
         this.delegate = delegate;
+        this.type = type;
+        if (!type.isAssignableFrom(delegate.getClass())) {
+            throw new IllegalArgumentException("Delegate-Object with " + delegate.getClass() + " can not be in Wrapper implementing " + type);
+        }
     }
 
     protected SQLException checkException(Exception ex) {
@@ -27,6 +33,10 @@ public abstract class JdbcProxy<T1> implements JdbcWrapper {
         } else {
             return new SQLException(ex.toString(), ex);
         }
+    }
+
+    public final Class<T1> type() {
+        return type;
     }
 
     /**

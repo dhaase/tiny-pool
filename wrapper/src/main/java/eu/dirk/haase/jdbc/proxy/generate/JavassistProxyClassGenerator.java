@@ -125,25 +125,29 @@ public class JavassistProxyClassGenerator {
         }
     }
 
-    public <T> CtClass generate(final ClassPool classPool, final Class<?> parentIfaceClass, final Map<String, CtClass> childs) throws Exception {
-        init(classPool);
+    public <T> CtClass generate(final ClassPool classPool, final Class<?> parentIfaceClass, final Map<String, CtClass> childs) {
+        try {
+            init(classPool);
 
-        final CtClass parentIfCt = (parentIfaceClass != null ? classPool.getCtClass(parentIfaceClass.getName()) : null);
-        final CtClass superCt = classPool.getCtClass(superClass.getName());
-        final CtClass targetCt = classPool.makeClass(newClassName, superCt);
-        targetCt.setModifiers(Modifier.FINAL | Modifier.PUBLIC);
+            final CtClass parentIfCt = (parentIfaceClass != null ? classPool.getCtClass(parentIfaceClass.getName()) : null);
+            final CtClass superCt = classPool.getCtClass(superClass.getName());
+            final CtClass targetCt = classPool.makeClass(newClassName, superCt);
+            targetCt.setModifiers(Modifier.FINAL | Modifier.PUBLIC);
 
-        final CtClass primaryIfCt = classPool.getCtClass(primaryIfaceClass.getName());
-        targetCt.addInterface(primaryIfCt);
+            final CtClass primaryIfCt = classPool.getCtClass(primaryIfaceClass.getName());
+            targetCt.addInterface(primaryIfCt);
 
-        final CtField field = addField(targetCt, primaryIfCt, "delegate");
-        final CtConstructor targetConstructorCt = addConstructor(targetCt, parentIfCt, primaryIfCt, field);
-        if (childs != null) {
-            addWrapMethod(targetCt, targetConstructorCt, childs, isWrapMethodConcurrent);
+            final CtField field = addField(targetCt, primaryIfCt, "delegate");
+            final CtConstructor targetConstructorCt = addConstructor(targetCt, parentIfCt, primaryIfCt, field);
+            if (childs != null) {
+                addWrapMethod(targetCt, targetConstructorCt, childs, isWrapMethodConcurrent);
+            }
+            addAPIMethods(targetCt, primaryIfaceClass, superCt, childs);
+
+            return targetCt;
+        } catch (Exception ex) {
+            throw new IllegalStateException(ex.toString(), ex);
         }
-        addAPIMethods(targetCt, primaryIfaceClass, superCt, childs);
-
-        return targetCt;
     }
 
     private String getSignature(CtMethod intfMethod) {

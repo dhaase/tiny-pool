@@ -12,7 +12,7 @@ public abstract class AbstractXADataSourceProxy extends ConcurrentFactoryJdbcPro
 
 
     protected AbstractXADataSourceProxy(final XADataSource delegate) {
-        super(delegate);
+        super(XADataSource.class, delegate);
     }
 
     /**

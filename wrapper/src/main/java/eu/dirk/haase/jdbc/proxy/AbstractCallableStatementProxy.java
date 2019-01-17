@@ -13,7 +13,7 @@ public abstract class AbstractCallableStatementProxy extends FactoryJdbcProxy<Ca
     private final CallableStatement delegate;
 
     protected AbstractCallableStatementProxy(CallableStatement delegate, Connection connection, final Object[] argumentArray) {
-        super(delegate);
+        super(CallableStatement.class, delegate);
         this.connection = connection;
         this.delegate = delegate;
     }

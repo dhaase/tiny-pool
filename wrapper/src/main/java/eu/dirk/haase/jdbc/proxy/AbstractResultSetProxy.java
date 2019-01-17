@@ -13,7 +13,7 @@ public abstract class AbstractResultSetProxy extends JdbcProxy<ResultSet> implem
     private final Statement statement;
 
     protected AbstractResultSetProxy(final ResultSet delegate, final Statement statement, final Object[] argumentArray) {
-        super(delegate);
+        super(ResultSet.class, delegate);
         this.statement = statement;
         this.delegate = delegate;
     }

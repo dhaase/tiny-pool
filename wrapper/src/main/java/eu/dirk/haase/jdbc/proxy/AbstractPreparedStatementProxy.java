@@ -14,7 +14,7 @@ public abstract class AbstractPreparedStatementProxy extends FactoryJdbcProxy<Pr
     private final PreparedStatement delegate;
 
     protected AbstractPreparedStatementProxy(PreparedStatement delegate, Connection connection, final Object[] argumentArray) {
-        super(delegate);
+        super(PreparedStatement.class, delegate);
         this.connection = connection;
         this.delegate = delegate;
     }

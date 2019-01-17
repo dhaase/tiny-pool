@@ -2,6 +2,7 @@ package eu.dirk.haase.jdbc.pool.util;
 
 import eu.dirk.haase.jdbc.proxy.factory.DataSourceWrapper;
 import eu.dirk.haase.jdbc.proxy.generate.JavassistProxyFactory;
+import org.h2.jdbcx.JdbcDataSource;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -66,6 +67,17 @@ public class WrapperTest {
         Connection connection1_a = dataSource_a.getConnection();
         Connection connection2_a = dataSource_a.getConnection();
         assertThat(connection1_a).isSameAs(connection2_a);
+        connection2_a.createStatement();
+    }
+
+    @Test
+    public void test_wrapper_datasource_h2() throws Exception {
+        JdbcDataSource h2Ds = new JdbcDataSource();
+        h2Ds.setUrl("jdbc:h2:mem:test");
+        DataSourceWrapper dsw = new DataSourceWrapper(interfaceToClassMap);
+        DataSource dataSource_a = dsw.wrapDataSource(h2Ds);
+        Connection connection1_a = dataSource_a.getConnection();
+        connection1_a.createStatement();
     }
 
 }

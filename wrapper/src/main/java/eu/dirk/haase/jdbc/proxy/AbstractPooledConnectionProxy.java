@@ -14,7 +14,7 @@ public abstract class AbstractPooledConnectionProxy extends ConcurrentFactoryJdb
     private final ConnectionPoolDataSource connectionPoolDataSource;
 
     protected AbstractPooledConnectionProxy(final PooledConnection delegate, final ConnectionPoolDataSource dataSource, final Object[] argumentArray) {
-        super(delegate);
+        super(PooledConnection.class, delegate);
         this.connectionPoolDataSource = dataSource;
     }
 

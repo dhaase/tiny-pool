@@ -12,7 +12,7 @@ public abstract class AbstractDataSourceProxy extends ConcurrentFactoryJdbcProxy
 
 
     protected AbstractDataSourceProxy(final DataSource delegate) {
-        super(delegate);
+        super(DataSource.class, delegate);
     }
 
     /**

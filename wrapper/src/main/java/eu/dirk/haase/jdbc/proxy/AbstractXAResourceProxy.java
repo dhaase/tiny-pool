@@ -13,7 +13,7 @@ public abstract class AbstractXAResourceProxy extends ConcurrentFactoryJdbcProxy
     private final XAConnection xaConnection;
 
     protected AbstractXAResourceProxy(final XAResource delegate, final XAConnection xaConnection, final Object[] argumentArray) {
-        super(delegate);
+        super(XAResource.class, delegate);
         this.xaConnection = xaConnection;
     }
 
