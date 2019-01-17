@@ -10,6 +10,7 @@ import org.junit.runners.BlockJUnit4ClassRunner;
 
 import javax.sql.ConnectionPoolDataSource;
 import javax.sql.DataSource;
+import javax.sql.XAConnection;
 import javax.sql.XADataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -75,9 +76,19 @@ public class WrapperTest {
         JdbcDataSource h2Ds = new JdbcDataSource();
         h2Ds.setUrl("jdbc:h2:mem:test");
         DataSourceWrapper dsw = new DataSourceWrapper(interfaceToClassMap);
-        DataSource dataSource_a = dsw.wrapDataSource(h2Ds);
-        Connection connection1_a = dataSource_a.getConnection();
-        connection1_a.createStatement();
+        XADataSource dataSource_a = dsw.wrapXADataSource(h2Ds);
+        XAConnection connection1_a = dataSource_a.getXAConnection();
+        connection1_a.getXAResource();
+    }
+
+    @Test
+    public void test_wrapper_h2() throws Exception {
+        JdbcDataSource h2Ds = new JdbcDataSource();
+        h2Ds.setUrl("jdbc:h2:mem:test");
+        DataSourceWrapper dsw = new DataSourceWrapper(interfaceToClassMap);
+        XADataSource dataSource_a = dsw.wrapXADataSource(h2Ds);
+        XAConnection connection1_a = dataSource_a.getXAConnection();
+        connection1_a.getXAResource();
     }
 
 }

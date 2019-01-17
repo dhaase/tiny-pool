@@ -63,7 +63,7 @@ public class JavassistProxyClassGenerator {
             parameter[0] = primaryIfCt;
             parameter[1] = parentIfCt;
             parameter[2] = classPool.getCtClass(Object[].class.getName());
-            methodBody = "{ super($1, $2, $3); this." + field.getName() + " = $2; }";
+            methodBody = "{ super($1, $2, $3); this." + field.getName() + " = $1; }";
         } else {
             parameter = new CtClass[1];
             parameter[0] = primaryIfCt;
