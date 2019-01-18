@@ -103,7 +103,7 @@ public class MultipleParentClassLoader extends SecureClassLoader {
                 }
                 return type;
             } catch (ClassNotFoundException ignored) {
-                /* try next class loader */
+                // try next class loader
             }
         }
         return super.loadClass(name, resolve);

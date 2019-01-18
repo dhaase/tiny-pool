@@ -14,14 +14,14 @@ import java.util.function.Function;
 
 public final class Generator {
 
-    private final static ThreadLocal<ClassLoader> classLoaderThreadLocal = ThreadLocal.withInitial(() -> new MultipleParentClassLoader());
 
     private static final String prefix = "gen.";
     private static final BiFunction<String, Class<?>, String> CLASS_NAME_FUN = (cn, iface) -> cn.replaceAll("(.+)\\.(\\w+)", "$1." + prefix + "$2");
-    private ClassLoader classLoader;
+    private final DefaultClassLoader defaultClassLoader;
 
     public Generator() {
         super();
+        this.defaultClassLoader = new DefaultClassLoader();
     }
 
     static String computeClassName(BiFunction<String, Class<?>, String> classNameFun, Class<?> primaryIfaceClass, Class<?> superClass) {
@@ -83,11 +83,11 @@ public final class Generator {
     }
 
     public ClassLoader getClassLoader() {
-        return classLoader == null ? classLoaderThreadLocal.get() : classLoader;
+        return this.defaultClassLoader.getClassLoader();
     }
 
     public void setClassLoader(ClassLoader classLoader) {
-        this.classLoader = classLoader;
+        this.defaultClassLoader.setClassLoader(classLoader);
     }
 
     private void hierarchyCheck(Class<?> iface, Object implObj) {
