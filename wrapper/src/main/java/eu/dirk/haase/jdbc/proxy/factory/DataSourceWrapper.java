@@ -1,7 +1,7 @@
 package eu.dirk.haase.jdbc.proxy.factory;
 
 import eu.dirk.haase.jdbc.proxy.base.JdbcWrapper;
-import eu.dirk.haase.jdbc.proxy.generate.DefaultClassLoader;
+import eu.dirk.haase.jdbc.proxy.generate.DefaultClassLoaderSupplier;
 import eu.dirk.haase.jdbc.proxy.hybrid.ConnectionPoolDataSourceHybrid;
 import eu.dirk.haase.jdbc.proxy.hybrid.ConnectionPoolXADataSourceHybrid;
 import eu.dirk.haase.jdbc.proxy.hybrid.XADataSourceHybrid;
@@ -18,14 +18,14 @@ import java.util.Map;
 
 public final class DataSourceWrapper implements Serializable {
 
-    private final DefaultClassLoader defaultClassLoader;
+    private final DefaultClassLoaderSupplier defaultClassLoader;
     private final Map<Class<?>, Object> interfaceToClassMap;
     private transient volatile Constructor<ConnectionPoolDataSource> connectionPoolDataSourceConstructor;
     private transient volatile Constructor<DataSource> dataSourceConstructor;
     private transient volatile Constructor<XADataSource> xaDataSourceConstructor;
 
     public DataSourceWrapper(final Map<Class<?>, Object> interfaceToClassMap) throws Exception {
-        this.defaultClassLoader = new DefaultClassLoader();
+        this.defaultClassLoader = new DefaultClassLoaderSupplier();
         this.interfaceToClassMap = Collections.unmodifiableMap(new HashMap<>(interfaceToClassMap));
         this.dataSourceConstructor = getDataSourceConstructor(null);
         this.xaDataSourceConstructor = getXADataSourceConstructor(null);

@@ -17,11 +17,11 @@ public final class Generator {
 
     private static final String prefix = "gen.";
     private static final BiFunction<String, Class<?>, String> CLASS_NAME_FUN = (cn, iface) -> cn.replaceAll("(.+)\\.(\\w+)", "$1." + prefix + "$2");
-    private final DefaultClassLoader defaultClassLoader;
+    private final DefaultClassLoaderSupplier defaultClassLoader;
 
     public Generator() {
         super();
-        this.defaultClassLoader = new DefaultClassLoader();
+        this.defaultClassLoader = new DefaultClassLoaderSupplier();
     }
 
     static String computeClassName(BiFunction<String, Class<?>, String> classNameFun, Class<?> primaryIfaceClass, Class<?> superClass) {
