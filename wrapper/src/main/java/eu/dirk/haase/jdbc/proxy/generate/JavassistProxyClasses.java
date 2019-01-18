@@ -109,7 +109,7 @@ public class JavassistProxyClasses {
     }
 
     private JavassistProxyClassGenerator createIfPresent(Class<?> iface, final BiFunction<String, Class<?>, String> classNameFun, final Map<Class<?>, Class<?>> iface2ClassMap) {
-        if (iface2ClassMap.containsKey(ConnectionPoolDataSource.class)) {
+        if (iface2ClassMap.containsKey(iface)) {
             return new JavassistProxyClassGenerator(classNameFun, iface, iface2ClassMap.get(iface));
         }
         return null;
@@ -122,8 +122,8 @@ public class JavassistProxyClasses {
         return null;
     }
 
-    private Map<String, Object> createInterfaceToClassMap(final Function<CtClass, Object> valueFunction) {
-        final Map<String, Object> interfaceToClassMap = new HashMap<>();
+    private Map<Class<?>, Object> createInterfaceToClassMap(final Function<CtClass, Object> valueFunction) {
+        final Map<Class<?>, Object> interfaceToClassMap = new HashMap<>();
 
         putIfPresent(interfaceToClassMap, ResultSet.class, this.resultSetCt, valueFunction);
         putIfPresent(interfaceToClassMap, CallableStatement.class, this.callableStatementCt, valueFunction);
@@ -195,7 +195,7 @@ public class JavassistProxyClasses {
         return this.xaResourceGen.generate(classPool, XAConnection.class, new HashMap<>());
     }
 
-    public Map<String, Object> generate(final Function<CtClass, Object> valueFunction) {
+    public Map<Class<?>, Object> generate(final Function<CtClass, Object> valueFunction) {
         this.classPool = createClassPool();
 
         this.resultSetCt = createIfPresent(ResultSet.class, () -> createResultSet());
@@ -213,9 +213,9 @@ public class JavassistProxyClasses {
         return createInterfaceToClassMap(valueFunction);
     }
 
-    private void putIfPresent(final Map<String, Object> interfaceToClassMap, Class<?> iface, CtClass classCt, final Function<CtClass, Object> valueFunction) {
+    private void putIfPresent(final Map<Class<?>, Object> interfaceToClassMap, Class<?> iface, CtClass classCt, final Function<CtClass, Object> valueFunction) {
         if (iface2ClassMap.containsKey(iface)) {
-            interfaceToClassMap.put(iface.getName(), valueFunction.apply(classCt));
+            interfaceToClassMap.put(iface, valueFunction.apply(classCt));
         }
     }
 }

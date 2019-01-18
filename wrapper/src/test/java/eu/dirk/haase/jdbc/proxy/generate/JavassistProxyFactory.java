@@ -44,7 +44,7 @@ public final class JavassistProxyFactory {
         f.javassistProxyClasses = new JavassistProxyClasses(CLASS_NAME_FUN, iface2ClassMap);
 
         final Function<CtClass, Object> valueFunction = (c) -> c; //(c)->toClass(c); // (c)->c.getName();
-        final Map<String, Object> interfaceToClassMap = f.javassistProxyClasses.generate(valueFunction);
+        final Map<Class<?>, Object> interfaceToClassMap = f.javassistProxyClasses.generate(valueFunction);
 
         for (final Object ctClassObj : interfaceToClassMap.values()) {
             writeFile((CtClass) ctClassObj);

@@ -23,7 +23,7 @@ public class JavassistProxyClassGenerator {
     private ClassPool classPool;
 
     public JavassistProxyClassGenerator(final BiFunction<String, Class<?>, String> classNameFun, final Class<?> primaryIfaceClass, final Class<?> superClass) {
-        this.newClassName = classNameFun.apply(superClass.getName(), primaryIfaceClass);
+        this.newClassName = Generator.computeClassName(classNameFun, primaryIfaceClass, superClass);
         this.delegateMethodBody = (d) -> "{ try { return delegate." + d + "($$); } catch (SQLException e) { throw checkException(e); } }";
         this.wrapMethodBody = (w, d) -> "{ try { return " + w + "(delegate." + d + "($$), $args); } catch (SQLException e) { throw checkException(e); } }";
         this.primaryIfaceClass = primaryIfaceClass;
