@@ -8,7 +8,7 @@ import javax.sql.DataSource;
 import java.sql.CallableStatement;
 import java.sql.Connection;
 
-public abstract class AbstractDataSourceProxy extends ConcurrentFactoryJdbcProxy<WeakIdentityHashMap<Object, Object>, DataSource> implements ValidState {
+public abstract class AbstractDataSourceProxy extends ConcurrentFactoryJdbcProxy<WeakIdentityHashMap<Object, Object>, DataSource> implements ValidState, DataSource {
 
 
     protected AbstractDataSourceProxy(final DataSource delegate) {

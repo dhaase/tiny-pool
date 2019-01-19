@@ -10,7 +10,7 @@ import javax.transaction.xa.XAResource;
 import java.sql.Connection;
 import java.sql.ResultSet;
 
-public abstract class AbstractXAConnectionProxy extends ConcurrentFactoryJdbcProxy<WeakIdentityHashMap<Object, Object>, XAConnection> implements ValidState {
+public abstract class AbstractXAConnectionProxy extends ConcurrentFactoryJdbcProxy<WeakIdentityHashMap<Object, Object>, XAConnection> implements ValidState, XAConnection {
 
     private final XADataSource xaDataSource;
 

@@ -7,7 +7,7 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
 
-public abstract class AbstractStatementProxy extends FactoryJdbcProxy<Statement> implements CloseState {
+public abstract class AbstractStatementProxy extends FactoryJdbcProxy<Statement> implements CloseState, Statement {
 
     private final Connection connection;
     private final Statement delegate;

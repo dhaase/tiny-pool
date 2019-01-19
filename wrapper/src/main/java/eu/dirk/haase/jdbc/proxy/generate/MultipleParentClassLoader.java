@@ -3,50 +3,109 @@ package eu.dirk.haase.jdbc.proxy.generate;
 import java.io.IOException;
 import java.net.URL;
 import java.security.SecureClassLoader;
-import java.util.ArrayList;
-import java.util.Enumeration;
-import java.util.List;
-import java.util.NoSuchElementException;
+import java.util.*;
 
 /**
+ * Dieser {@link java.lang.ClassLoader} kann Klassen aus mehreren &uuml;bergeordneten
+ * ClassLoader laden.
  * <p>
- * This {@link java.lang.ClassLoader} is capable of loading classes from multiple parents. This class loader
- * implicitly defines the bootstrap class loader to be its direct parent as it is required for all class loaders.
- * This can be useful when creating a type that inherits a super type and interfaces that are defined by different,
- * non-compatible class loaders.
- * </p>
+ * Dieser ClassLoader definiert implizit den Bootstrap-ClassLoader als direkten
+ * &uuml;bergeordneten ClassLoader, da er f&uuml;r alle ClassLoader erforderlich ist.
  * <p>
- * <b>Note</b>: Instances of this class loader can have the same class loader as its parent multiple times,
- * either directly or indirectly by multiple parents sharing a common parent class loader. By definition,
- * this implies that the bootstrap class loader is {@code #(direct parents) + 1} times a parent of this class loader.
- * For the {@link java.lang.ClassLoader#getResources(java.lang.String)} method, this means that this class loader
- * might return the same url multiple times by representing the same class loader multiple times.
- * </p>
+ * Dieser ClassLoader l&ouml;st das Problem das bei verschiedenen ClassLoader aus
+ * mehreren Quellen oft nicht sicher ist, welcher ClassLoader die Klasse oder Resource
+ * erfolgreich laden kann.
+ * Daher wird intern eine Liste von potentiellen ClassLoader gef&uuml;hrt, die
+ * die beim Aufruf abgefragt werden k&ouml;nnen.
  * <p>
- * <b>Important</b>: This class loader does not support the location of packages from its multiple parents. This breaks
- * package equality when loading classes by either loading them directly via this class loader (e.g. by subclassing) or
- * by loading classes with child class loaders of this class loader.
- * </p>
+ * M&ouml;gliche Quellen sind:
+ * <ul>
+ * <li>{@link Thread#getContextClassLoader()} des aktuellen Threads</li>
+ * <li>der ClassLoader dieser Klasse</li>
+ * <li>{@link ClassLoader#getSystemClassLoader()}</li>
+ * </ul>
  */
-public class MultipleParentClassLoader extends SecureClassLoader {
+public final class MultipleParentClassLoader extends SecureClassLoader {
+
+    private final List<ClassLoader> parentList;
+
 
     /**
-     * The parents of this class loader in their application order.
+     * Erzeugt einen {@link java.lang.ClassLoader} mit mehreren &uuml;bergeordneten
+     * ClassLoader.
+     * <p>
+     * Es werden weitere ClassLoader, sofern sie sich unterscheiden und
+     * tats&auml;chlich existieren, hinzugef&uuml;gt:
+     * <ul>
+     * <li>{@link Thread#getContextClassLoader()} des aktuellen Threads</li>
+     * <li>der ClassLoader dieser Klasse</li>
+     * <li>{@link ClassLoader#getSystemClassLoader()}</li>
+     * </ul>
      */
-    private final List<ClassLoader> parents;
-
     public MultipleParentClassLoader() {
-        this.parents = new ArrayList<>();
+        this(null);
+    }
+
+
+    /**
+     * Erzeugt einen {@link java.lang.ClassLoader} mit mehreren &uuml;bergeordneten
+     * ClassLoader.
+     * <p>
+     * Zus&auml;tzlich zu dem explizit angegebenen &uuml;bergeordneten ClassLoader werden
+     * weitere ClassLoader, sofern sie sich unterscheiden und tats&auml;chlich existieren,
+     * hinzugef&uuml;gt:
+     * <ul>
+     * <li>{@link Thread#getContextClassLoader()} des aktuellen Threads</li>
+     * <li>der ClassLoader dieser Klasse</li>
+     * <li>{@link ClassLoader#getSystemClassLoader()}</li>
+     * </ul>
+     *
+     * @param parent ein expliziter &uuml;bergeordneter ClassLoader der zuerst verwendet wird.
+     */
+    public MultipleParentClassLoader(final ClassLoader parent) {
+        this.parentList = new ArrayList<>();
+        addClassLoader(parent);
         addClassLoader(Thread.currentThread().getContextClassLoader());
         addClassLoader(MultipleParentClassLoader.class.getClassLoader());
         addClassLoader(ClassLoader.getSystemClassLoader());
     }
 
-    private void addClassLoader(ClassLoader contextClassLoader) {
+    /**
+     * Erzeugt einen {@link java.lang.ClassLoader} mit mehreren &uuml;bergeordneten
+     * ClassLoader.
+     * <p>
+     * Zus&auml;tzlich zu dem explizit angegebenen &uuml;bergeordneten ClassLoader werden
+     * weitere ClassLoader, sofern sie sich unterscheiden und tats&auml;chlich existieren,
+     * hinzugef&uuml;gt:
+     * <ul>
+     * <li>{@link Thread#getContextClassLoader()} des aktuellen Threads</li>
+     * <li>der ClassLoader dieser Klasse</li>
+     * <li>{@link ClassLoader#getSystemClassLoader()}</li>
+     * </ul>
+     *
+     * @param parent  ein expliziter &uuml;bergeordneter ClassLoader der zuerst verwendet wird.
+     * @param parents eine Liste mit weiteren &uuml;bergeordneten ClassLoader.
+     */
+    public MultipleParentClassLoader(ClassLoader parent, List<ClassLoader> parents) {
+        this.parentList = (parents == null ? new ArrayList<>() : new ArrayList<>(parents));
+        addParentOnTop(parent);
+        addClassLoader(Thread.currentThread().getContextClassLoader());
+        addClassLoader(MultipleParentClassLoader.class.getClassLoader());
+        addClassLoader(ClassLoader.getSystemClassLoader());
+    }
+
+    private void addParentOnTop(ClassLoader parent) {
+        if ((parent != null) && !this.parentList.contains(parent)) {
+            Collections.reverse(this.parentList);
+            this.parentList.add(parent);
+            Collections.reverse(this.parentList);
+        }
+    }
+
+    private void addClassLoader(ClassLoader cl) {
         try {
-            final ClassLoader cl = contextClassLoader;
-            if ((cl != null) && (!this.parents.contains(cl))) {
-                this.parents.add(cl);
+            if ((cl != null) && (getParent() != cl) && !this.parentList.contains(cl)) {
+                this.parentList.add(cl);
             }
         } catch (Throwable ex) {
             // Cannot access ClassLoader
@@ -54,23 +113,10 @@ public class MultipleParentClassLoader extends SecureClassLoader {
     }
 
     /**
-     * Creates a new class loader with multiple parents.
-     *
-     * @param parent  An explicit parent in compliance with the class loader API. This explicit parent should only be set if
-     *                the current platform does not allow creating a class loader that extends the bootstrap loader.
-     * @param parents The parents of this class loader in their application order. This list must not contain {@code null},
-     *                i.e. the bootstrap class loader which is an implicit parent of any class loader.
-     */
-    public MultipleParentClassLoader(ClassLoader parent, List<ClassLoader> parents) {
-        super(parent);
-        this.parents = parents;
-    }
-
-    /**
      * {@inheritDoc}
      */
     public URL getResource(String name) {
-        for (ClassLoader parent : parents) {
+        for (ClassLoader parent : parentList) {
             URL url = parent.getResource(name);
             if (url != null) {
                 return url;
@@ -79,23 +125,17 @@ public class MultipleParentClassLoader extends SecureClassLoader {
         return super.getResource(name);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     public Enumeration<URL> getResources(String name) throws IOException {
-        List<Enumeration<URL>> enumerations = new ArrayList<Enumeration<URL>>(parents.size() + 1);
-        for (ClassLoader parent : parents) {
+        List<Enumeration<URL>> enumerations = new ArrayList<Enumeration<URL>>(parentList.size() + 1);
+        for (ClassLoader parent : parentList) {
             enumerations.add(parent.getResources(name));
         }
         enumerations.add(super.getResources(name));
         return new CompoundEnumeration(enumerations);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
-        for (ClassLoader parent : parents) {
+        for (ClassLoader parent : parentList) {
             try {
                 Class<?> type = parent.loadClass(name);
                 if (resolve) {
@@ -103,44 +143,25 @@ public class MultipleParentClassLoader extends SecureClassLoader {
                 }
                 return type;
             } catch (ClassNotFoundException ignored) {
-                // try next class loader
+                // versuche den naechsten
             }
         }
+        // gebe an den Bootstrap-ClassLoader weiter
         return super.loadClass(name, resolve);
     }
 
-    /**
-     * A compound URL enumeration.
-     */
     protected static class CompoundEnumeration implements Enumeration<URL> {
 
-        /**
-         * Indicates the first index of a list.
-         */
         private static final int FIRST = 0;
 
-        /**
-         * The remaining lists of enumerations.
-         */
         private final List<Enumeration<URL>> enumerations;
 
-        /**
-         * The currently represented enumeration or {@code null} if no such enumeration is currently selected.
-         */
         private Enumeration<URL> currentEnumeration;
 
-        /**
-         * Creates a compound enumeration.
-         *
-         * @param enumerations The enumerations to represent.
-         */
         protected CompoundEnumeration(List<Enumeration<URL>> enumerations) {
             this.enumerations = enumerations;
         }
 
-        /**
-         * {@inheritDoc}
-         */
         public boolean hasMoreElements() {
             if (currentEnumeration != null && currentEnumeration.hasMoreElements()) {
                 return true;
@@ -152,9 +173,6 @@ public class MultipleParentClassLoader extends SecureClassLoader {
             }
         }
 
-        /**
-         * {@inheritDoc}
-         */
         public URL nextElement() {
             if (hasMoreElements()) {
                 return currentEnumeration.nextElement();

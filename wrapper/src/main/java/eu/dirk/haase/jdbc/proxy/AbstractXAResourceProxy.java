@@ -8,7 +8,7 @@ import javax.sql.XAConnection;
 import javax.sql.XADataSource;
 import javax.transaction.xa.XAResource;
 
-public abstract class AbstractXAResourceProxy extends ConcurrentFactoryJdbcProxy<WeakIdentityHashMap<Object, Object>, XAResource> implements ValidState {
+public abstract class AbstractXAResourceProxy extends ConcurrentFactoryJdbcProxy<WeakIdentityHashMap<Object, Object>, XAResource> implements ValidState, XAResource {
 
     private final XAConnection xaConnection;
 

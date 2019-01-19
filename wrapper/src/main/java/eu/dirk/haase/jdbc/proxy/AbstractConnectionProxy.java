@@ -8,7 +8,7 @@ import javax.sql.DataSource;
 import javax.sql.PooledConnection;
 import java.sql.*;
 
-public abstract class AbstractConnectionProxy extends FactoryJdbcProxy<Connection> implements CloseState, ValidState {
+public abstract class AbstractConnectionProxy extends FactoryJdbcProxy<Connection> implements CloseState, ValidState, Connection {
 
     private final DataSource dataSource;
     private final Connection delegate;

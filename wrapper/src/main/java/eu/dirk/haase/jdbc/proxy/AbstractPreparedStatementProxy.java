@@ -8,7 +8,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 
-public abstract class AbstractPreparedStatementProxy extends FactoryJdbcProxy<PreparedStatement> implements CloseState {
+public abstract class AbstractPreparedStatementProxy extends FactoryJdbcProxy<PreparedStatement> implements CloseState, PreparedStatement {
 
     private final Connection connection;
     private final PreparedStatement delegate;

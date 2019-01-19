@@ -8,7 +8,7 @@ import javax.sql.ConnectionPoolDataSource;
 import javax.sql.PooledConnection;
 
 
-public abstract class AbstractConnectionPoolDataSourceProxy extends ConcurrentFactoryJdbcProxy<WeakIdentityHashMap<Object, Object>, ConnectionPoolDataSource> implements ValidState {
+public abstract class AbstractConnectionPoolDataSourceProxy extends ConcurrentFactoryJdbcProxy<WeakIdentityHashMap<Object, Object>, ConnectionPoolDataSource> implements ValidState, ConnectionPoolDataSource {
 
 
     protected AbstractConnectionPoolDataSourceProxy(final ConnectionPoolDataSource delegate) {
