@@ -10,4 +10,9 @@ public abstract class MyWrapConnection extends AbstractConnectionProxy implement
     protected MyWrapConnection(Connection delegate, DataSource dataSource, Object[] argumentArray) throws SQLException {
         super(delegate, dataSource, argumentArray);
     }
+
+    @Override
+    public final String nativeSQL(String sql) throws SQLException {
+        return String.valueOf(System.nanoTime());
+    }
 }

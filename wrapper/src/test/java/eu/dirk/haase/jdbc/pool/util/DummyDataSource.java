@@ -71,6 +71,9 @@ public class DummyDataSource {
             if ("toString".equals(method.getName())) {
                 return "Proxy-Connection: " + this;
             }
+            if ("isWrapperFor".equals(method.getName())) {
+                return false;
+            }
             return null;
         }
     }
@@ -84,6 +87,9 @@ public class DummyDataSource {
             }
             if ("toString".equals(method.getName())) {
                 return "Proxy-DataSource: " + this;
+            }
+            if ("isWrapperFor".equals(method.getName())) {
+                return false;
             }
             return null;
         }

@@ -6,7 +6,12 @@ import javassist.CtClass;
 
 import javax.sql.*;
 import javax.transaction.xa.XAResource;
+import java.net.URL;
+import java.security.CodeSigner;
+import java.security.CodeSource;
+import java.security.PermissionCollection;
 import java.security.ProtectionDomain;
+import java.security.cert.Certificate;
 import java.sql.*;
 import java.util.HashMap;
 import java.util.Map;
@@ -73,6 +78,24 @@ public final class Generator {
         } catch (CannotCompileException e) {
             throw new IllegalStateException(e);
         }
+    }
+
+    private CodeSource createCodeSource(CodeSource codeSource, Class<?> candidateCustomClass) {
+        try {
+            final Package customPackage = candidateCustomClass.getPackage();
+            final URL url = new URL("file://generated/jdbc/wrapper/" + customPackage.getName() + "/");
+            final Certificate[] certificate = codeSource.getCertificates();
+            final CodeSigner[] codeSigner = codeSource.getCodeSigners();
+            if ((certificate != null) && (certificate.length > 0)) {
+                return new CodeSource(url, certificate);
+            } else {
+                return new CodeSource(url, codeSigner);
+            }
+        } catch (Exception ignore) {
+            // Sollte nicht auftreten, falls doch dann
+            // gibt es eben keine CodeSource
+        }
+        return null;
     }
 
     private void ensureTopLevelInterface(final Map<Class<?>, Class<?>> iface2CustomClassMap) {
@@ -193,15 +216,6 @@ public final class Generator {
         return generate(iface2CustomClassMap, CLASS_NAME_FUN);
     }
 
-    private ClassLoader getClassLoader(Class<?> candidateCustomClass) {
-        try {
-            return candidateCustomClass.getClassLoader();
-        } catch (SecurityException se) {
-            // was koennen wir tun ?
-        }
-        return null;
-    }
-
     private Object getClassGeneratingLock(String className) {
         Object newLock = new Object();
         Object lock = parallelLockMap.putIfAbsent(className, newLock);
@@ -211,10 +225,22 @@ public final class Generator {
         return lock;
     }
 
+    private ClassLoader getClassLoader(Class<?> candidateCustomClass) {
+        try {
+            return candidateCustomClass.getClassLoader();
+        } catch (SecurityException ignore) {
+            // was koennen wir tun ?
+        }
+        return null;
+    }
+
     private ProtectionDomain getProtectionDomain(Class<?> candidateCustomClass) {
         try {
-            return candidateCustomClass.getProtectionDomain();
-        } catch (SecurityException se) {
+            final ProtectionDomain protectionDomain = candidateCustomClass.getProtectionDomain();
+            final CodeSource codeSource = protectionDomain.getCodeSource();
+            final PermissionCollection permissionCollection = protectionDomain.getPermissions();
+            return new ProtectionDomain(createCodeSource(codeSource, candidateCustomClass), permissionCollection);
+        } catch (SecurityException ignore) {
             // was koennen wir tun ?
         }
         return null;
