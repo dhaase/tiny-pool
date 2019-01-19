@@ -6,6 +6,7 @@ import javassist.CtClass;
 
 import javax.sql.*;
 import javax.transaction.xa.XAResource;
+import java.io.Serializable;
 import java.net.URL;
 import java.security.CodeSigner;
 import java.security.CodeSource;
@@ -21,11 +22,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
-public final class Generator {
-
+public final class Generator implements Serializable {
 
     private static final String prefix = "gen.";
     private static final BiFunction<String, Class<?>, String> CLASS_NAME_FUN = (cn, iface) -> cn.replaceAll("(.+)\\.(\\w+)", "$1." + prefix + "$2");
+    private static final long serialVersionUID = 0L;
 
     static {
         // Standard Wrapper-Klassen werden hier einmalig generiert und geladen.
@@ -46,18 +47,18 @@ public final class Generator {
         iface2ClassMap.put(PooledConnection.class, AbstractPooledConnectionProxy.class);
         iface2ClassMap.put(ConnectionPoolDataSource.class, AbstractConnectionPoolDataSourceProxy.class);
 
-        Generator generator = new Generator();
+        final Generator generator = new Generator();
         generator.generate(iface2ClassMap);
     }
 
-    private final ConcurrentHashMap<String, Object> parallelLockMap;
+    private final ConcurrentHashMap<String, Lock> parallelLockMap;
 
     public Generator() {
         super();
         this.parallelLockMap = new ConcurrentHashMap<>();
     }
 
-    static String computeClassName(BiFunction<String, Class<?>, String> classNameFun, Class<?> primaryIfaceClass, Class<?> superClass) {
+    static String computeClassName(final BiFunction<String, Class<?>, String> classNameFun, final Class<?> primaryIfaceClass, final Class<?> superClass) {
         return classNameFun.apply(superClass.getName().replace("Abstract", ""), primaryIfaceClass);
     }
 
@@ -72,15 +73,15 @@ public final class Generator {
      *                         erhalten soll.
      * @return die geladene normale Klasse.
      */
-    private static Object toClass(CtClass ctClass, final ClassLoader classLoader, final ProtectionDomain protectionDomain) {
+    private static Object toClass(final CtClass ctClass, final ClassLoader classLoader, final ProtectionDomain protectionDomain) {
         try {
             return ctClass.toClass(classLoader, protectionDomain);
-        } catch (CannotCompileException e) {
-            throw new IllegalStateException(e);
+        } catch (CannotCompileException ex) {
+            throw new IllegalStateException(ex.toString(), ex);
         }
     }
 
-    private CodeSource createCodeSource(CodeSource codeSource, Class<?> candidateCustomClass) {
+    private CodeSource createCodeSource(final CodeSource codeSource, final Class<?> candidateCustomClass) {
         try {
             final Package customPackage = candidateCustomClass.getPackage();
             final URL url = new URL("file://generated/jdbc/wrapper/" + customPackage.getName() + "/");
@@ -117,7 +118,7 @@ public final class Generator {
      * @param iface2CustomClassMap die Map aus der einen Klassen-Kandidat ermittelt wird.
      * @return der ermittelte Klassen-Kandidat.
      */
-    private Class<?> extractCandidateCustomClass(Map<Class<?>, Class<?>> iface2CustomClassMap) {
+    private Class<?> extractCandidateCustomClass(final Map<Class<?>, Class<?>> iface2CustomClassMap) {
         final SortedMap<String, Class<?>> name2ClassMap = new TreeMap<>();
         iface2CustomClassMap.forEach((i, c) -> name2ClassMap.put(c.getName(), c));
         return name2ClassMap.get(name2ClassMap.firstKey());
@@ -145,9 +146,9 @@ public final class Generator {
         for (final Map.Entry<Class<?>, Class<?>> entry : iface2ClassMap.entrySet()) {
             final Class<?> primaryIfaceClass = entry.getKey();
             final Class<?> superClass = entry.getValue();
-            String newClassName = Generator.computeClassName(classNameFun, primaryIfaceClass, superClass);
+            final String newClassName = Generator.computeClassName(classNameFun, primaryIfaceClass, superClass);
             try {
-                Class<?> implClass = Class.forName(newClassName, true, classLoader);
+                final Class<?> implClass = Class.forName(newClassName, true, classLoader);
                 existingClassesMap.put(primaryIfaceClass, implClass);
             } catch (ClassNotFoundException | NoClassDefFoundError cnfe) {
                 // ignore
@@ -190,7 +191,7 @@ public final class Generator {
 
             final Function<CtClass, Object> resultFunction = (c) -> toClass(c, multipleParentClassLoader, protectionDomain);
 
-            JavassistProxyClasses javassistProxyClasses = new JavassistProxyClasses(classNameFun, iface2ClassMap);
+            final JavassistProxyClasses javassistProxyClasses = new JavassistProxyClasses(classNameFun, iface2ClassMap);
             final Map<Class<?>, Object> iface2ResultClassMap = javassistProxyClasses.generate(resultFunction);
 
             iface2ResultClassMap.forEach((i, c) -> typeCheck(i, c));
@@ -216,16 +217,16 @@ public final class Generator {
         return generate(iface2CustomClassMap, CLASS_NAME_FUN);
     }
 
-    private Object getClassGeneratingLock(String className) {
-        Object newLock = new Object();
-        Object lock = parallelLockMap.putIfAbsent(className, newLock);
+    private Lock getClassGeneratingLock(final String className) {
+        final Lock newLock = new Lock();
+        Lock lock = parallelLockMap.putIfAbsent(className, newLock);
         if (lock == null) {
             lock = newLock;
         }
         return lock;
     }
 
-    private ClassLoader getClassLoader(Class<?> candidateCustomClass) {
+    private ClassLoader getClassLoader(final Class<?> candidateCustomClass) {
         try {
             return candidateCustomClass.getClassLoader();
         } catch (SecurityException ignore) {
@@ -234,7 +235,7 @@ public final class Generator {
         return null;
     }
 
-    private ProtectionDomain getProtectionDomain(Class<?> candidateCustomClass) {
+    private ProtectionDomain getProtectionDomain(final Class<?> candidateCustomClass) {
         try {
             final ProtectionDomain protectionDomain = candidateCustomClass.getProtectionDomain();
             final CodeSource codeSource = protectionDomain.getCodeSource();
@@ -246,10 +247,17 @@ public final class Generator {
         return null;
     }
 
-    private void typeCheck(Class<?> iface, Object implObj) {
+    private void typeCheck(final Class<?> iface, final Object implObj) {
         if (!iface.isAssignableFrom((Class<?>) implObj)) {
             throw new IllegalArgumentException(implObj + " is not implementing " + iface);
         }
     }
 
+    static class Lock implements Serializable {
+        private static final long serialVersionUID = 0L;
+
+        public Lock() {
+            super();
+        }
+    }
 }
