@@ -1,12 +1,8 @@
 package eu.dirk.haase.jdbc.proxy.generate;
 
-import eu.dirk.haase.jdbc.proxy.*;
 import javassist.CannotCompileException;
 import javassist.CtClass;
 
-import javax.sql.*;
-import javax.transaction.xa.XAResource;
-import java.sql.*;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiFunction;
@@ -64,8 +60,7 @@ public final class Generator {
 
         iface2CustomClassMap.forEach((i, c) -> hierarchyCheck(i, c));
 
-        final Map<Class<?>, Class<?>> iface2ClassMap = newIface2ClassMap();
-        iface2ClassMap.putAll(iface2CustomClassMap);
+        final Map<Class<?>, Class<?>> iface2ClassMap = new HashMap<>(iface2CustomClassMap);
         final Map<Class<?>, Class<?>> existingClassesMap = filterExistingClasses(iface2ClassMap, classNameFun);
 
         JavassistProxyClasses javassistProxyClasses = new JavassistProxyClasses(classNameFun, iface2ClassMap);
@@ -94,24 +89,6 @@ public final class Generator {
         if (!iface.isAssignableFrom((Class<?>) implObj)) {
             throw new IllegalArgumentException(implObj + " is not implementing " + iface);
         }
-    }
-
-    private Map<Class<?>, Class<?>> newIface2ClassMap() {
-        final Map<Class<?>, Class<?>> iface2ClassMap = new HashMap<>();
-
-        iface2ClassMap.put(ResultSet.class, AbstractResultSetProxy.class);
-        iface2ClassMap.put(CallableStatement.class, AbstractCallableStatementProxy.class);
-        iface2ClassMap.put(PreparedStatement.class, AbstractPreparedStatementProxy.class);
-        iface2ClassMap.put(Statement.class, AbstractStatementProxy.class);
-        iface2ClassMap.put(Connection.class, AbstractConnectionProxy.class);
-        iface2ClassMap.put(DataSource.class, AbstractDataSourceProxy.class);
-        iface2ClassMap.put(XAResource.class, AbstractXAResourceProxy.class);
-        iface2ClassMap.put(XAConnection.class, AbstractXAConnectionProxy.class);
-        iface2ClassMap.put(XADataSource.class, AbstractXADataSourceProxy.class);
-        iface2ClassMap.put(PooledConnection.class, AbstractPooledConnectionProxy.class);
-        iface2ClassMap.put(ConnectionPoolDataSource.class, AbstractConnectionPoolDataSourceProxy.class);
-
-        return iface2ClassMap;
     }
 
 }

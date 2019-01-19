@@ -38,8 +38,8 @@ public class MultipleParentClassLoader extends SecureClassLoader {
     public MultipleParentClassLoader() {
         this.parents = new ArrayList<>();
         addClassLoader(Thread.currentThread().getContextClassLoader());
-        addClassLoader(ClassLoader.getSystemClassLoader());
         addClassLoader(MultipleParentClassLoader.class.getClassLoader());
+        addClassLoader(ClassLoader.getSystemClassLoader());
     }
 
     private void addClassLoader(ClassLoader contextClassLoader) {

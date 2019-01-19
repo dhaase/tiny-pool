@@ -5,7 +5,6 @@ import java.util.function.Supplier;
 
 public final class DefaultClassLoaderSupplier implements Supplier<ClassLoader> {
 
-    private final static ThreadLocal<ClassLoader> classLoaderThreadLocal = ThreadLocal.withInitial(() -> new MultipleParentClassLoader());
     private final AtomicReference<ClassLoader> classLoaderReference;
 
     public DefaultClassLoaderSupplier() {
@@ -19,7 +18,7 @@ public final class DefaultClassLoaderSupplier implements Supplier<ClassLoader> {
 
     public ClassLoader getClassLoader() {
         final ClassLoader classLoader = this.classLoaderReference.get();
-        return classLoader == null ? classLoaderThreadLocal.get() : classLoader;
+        return classLoader == null ? new MultipleParentClassLoader() : classLoader;
     }
 
     public void setClassLoader(ClassLoader classLoader) {
