@@ -77,7 +77,8 @@ public class CustomWrapperTest {
 
         long start = System.nanoTime();
         for (int o = 0; 1000 > o; ++o) {
-            final String endStr = connection.nativeSQL("");
+            //final String endStr = connection.nativeSQL("");
+            k.getConnection();
         }
         long end = System.nanoTime();
         System.out.println("duration: " + TimeUnit.NANOSECONDS.toMillis(end - start) + "ms");

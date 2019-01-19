@@ -108,13 +108,11 @@ public final class MultipleParentClassLoader extends SecureClassLoader {
                 this.parentList.add(cl);
             }
         } catch (Throwable ex) {
-            // Cannot access ClassLoader
+            // Kein Zugriff auf den ClassLoader
         }
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    @Override
     public URL getResource(String name) {
         for (ClassLoader parent : parentList) {
             URL url = parent.getResource(name);
@@ -125,6 +123,7 @@ public final class MultipleParentClassLoader extends SecureClassLoader {
         return super.getResource(name);
     }
 
+    @Override
     public Enumeration<URL> getResources(String name) throws IOException {
         List<Enumeration<URL>> enumerations = new ArrayList<Enumeration<URL>>(parentList.size() + 1);
         for (ClassLoader parent : parentList) {
@@ -134,6 +133,7 @@ public final class MultipleParentClassLoader extends SecureClassLoader {
         return new CompoundEnumeration(enumerations);
     }
 
+    @Override
     protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
         for (ClassLoader parent : parentList) {
             try {
@@ -150,18 +150,19 @@ public final class MultipleParentClassLoader extends SecureClassLoader {
         return super.loadClass(name, resolve);
     }
 
-    protected static class CompoundEnumeration implements Enumeration<URL> {
+    static class CompoundEnumeration implements Enumeration<URL> {
 
-        private static final int FIRST = 0;
+        static final int FIRST = 0;
 
-        private final List<Enumeration<URL>> enumerations;
+        final List<Enumeration<URL>> enumerations;
 
-        private Enumeration<URL> currentEnumeration;
+        Enumeration<URL> currentEnumeration;
 
-        protected CompoundEnumeration(List<Enumeration<URL>> enumerations) {
+        CompoundEnumeration(List<Enumeration<URL>> enumerations) {
             this.enumerations = enumerations;
         }
 
+        @Override
         public boolean hasMoreElements() {
             if (currentEnumeration != null && currentEnumeration.hasMoreElements()) {
                 return true;
@@ -173,6 +174,7 @@ public final class MultipleParentClassLoader extends SecureClassLoader {
             }
         }
 
+        @Override
         public URL nextElement() {
             if (hasMoreElements()) {
                 return currentEnumeration.nextElement();
