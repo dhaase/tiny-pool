@@ -25,7 +25,8 @@ import java.sql.Wrapper;
  * <li>und die Instanz-Variablen durch Wrapper die gew&uuml;nschten zus&auml;tzliche Funktionalit&auml;ten erhalten.</li>
  * </ul>
  *
- * @see DataSourceWrapperFactory.Hybrid#wrapConnectionPoolXADataSourceHybrid(javax.sql.ConnectionPoolDataSource)
+ * @see DataSourceWrapperFactory.Hybrid#wrapConnectionPoolDataSourceHybrid(javax.sql.DataSource)
+ * @see DataSourceWrapperFactory.Hybrid#wrapAutoType(javax.sql.DataSource)
  * @see ConnectionPoolDataSource
  * @see XADataSource
  * @see DataSource
