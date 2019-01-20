@@ -104,10 +104,6 @@ public final class DataSourceWrapperFactory implements Serializable {
         }
     }
 
-    public Map<Class<?>, Object> getInterfaceToClassMap() {
-        return interfaceToClassMap;
-    }
-
     private Constructor<XADataSource> getXADataSourceConstructor(Class<?> delegateClass) throws ClassNotFoundException {
         final Class<XADataSource> ifaceClass = XADataSource.class;
         if (interfaceToClassMap.containsKey(ifaceClass)) {
@@ -159,11 +155,19 @@ public final class DataSourceWrapperFactory implements Serializable {
      * gleichzeitig mehrere Interfaces {@link DataSource} und {@link XADataSource}
      * oder {@link ConnectionPoolDataSource} implementiert.
      *
+     * @param <T1> generischer Typ der beschr&auml;nkt ist auf {@link DataSource}.
+     * @param <T2> zusammengesetzter generischer Typ der gleichzeitig beschr&auml;nkt ist auf
+     *             die Interfaces {@link XADataSource} und {@link DataSource}.
+     * @param <T3> zusammengesetzter generischer Typ der gleichzeitig beschr&auml;nkt ist auf die
+     *             Interfaces {@link ConnectionPoolDataSource}, {@link XADataSource} und
+     *             {@link DataSource}.
+     * @param <T4> zusammengesetzter generischer Typ der gleichzeitig beschr&auml;nkt ist auf
+     *             {@link ConnectionPoolDataSource} und {@link DataSource}.
      * @see ConnectionPoolDataSourceHybrid
      * @see ConnectionPoolXADataSourceHybrid
      * @see XADataSourceHybrid
      */
-    public final class Hybrid {
+    public final class Hybrid<T1 extends DataSource, T2 extends XADataSource & DataSource, T3 extends ConnectionPoolDataSource & XADataSource & DataSource, T4 extends ConnectionPoolDataSource & DataSource> {
 
         private Hybrid() {
         }
@@ -175,16 +179,14 @@ public final class DataSourceWrapperFactory implements Serializable {
          *
          * @param delegate die zugrundeliegende Instanz die gleichzeitig die Interfaces
          *                 {@link ConnectionPoolDataSource} und {@link DataSource} implementiert.
-         * @param <T>      zusammengesetzter generischer Typ der gleichzeitig beschr&auml;nkt ist auf
-         *                 {@link ConnectionPoolDataSource} und {@link DataSource}.
          * @return eine DataSource-Instanz die gleichzeitig die Interfaces
          * {@link ConnectionPoolDataSource} und {@link DataSource}
          * implementiert.
          * @throws Exception wird ausgel&ouml;st wenn keine Wrapper-Objekte erzeugt werden k&ouml;nnen.
          */
         @SuppressWarnings("unchecked")
-        public <T extends ConnectionPoolDataSource & DataSource> T wrapConnectionPoolDataSourceHybrid(final T delegate) throws Exception {
-            final T wrapper = (T) new ConnectionPoolDataSourceHybrid(wrapDataSource(delegate), wrapConnectionPoolDataSource(delegate));
+        public T4 wrapConnectionPoolDataSourceHybrid(final T4 delegate) throws Exception {
+            final T4 wrapper = (T4) new ConnectionPoolDataSourceHybrid(wrapDataSource(delegate), wrapConnectionPoolDataSource(delegate));
             ensureOnlyWrappingOnce(delegate, wrapper);
             return wrapper;
         }
@@ -197,17 +199,14 @@ public final class DataSourceWrapperFactory implements Serializable {
          * @param delegate die zugrundeliegende Instanz die gleichzeitig die Interfaces
          *                 Interfaces {@link ConnectionPoolDataSource}, {@link XADataSource} und
          *                 {@link DataSource} implementiert.
-         * @param <T>      zusammengesetzter generischer Typ der gleichzeitig beschr&auml;nkt ist auf die
-         *                 Interfaces {@link ConnectionPoolDataSource}, {@link XADataSource} und
-         *                 {@link DataSource}.
          * @return eine DataSource-Instanz die gleichzeitig die Interfaces
          * {@link ConnectionPoolDataSource}, {@link XADataSource} und
          * {@link DataSource} implementiert.
          * @throws Exception wird ausgel&ouml;st wenn keine Wrapper-Objekte erzeugt werden k&ouml;nnen.
          */
         @SuppressWarnings("unchecked")
-        public <T extends ConnectionPoolDataSource & XADataSource & DataSource> T wrapConnectionPoolXADataSourceHybrid(final T delegate) throws Exception {
-            final T wrapper = (T) new ConnectionPoolXADataSourceHybrid(wrapDataSource(delegate), wrapConnectionPoolDataSource(delegate), wrapXADataSource(delegate));
+        public T3 wrapConnectionPoolXADataSourceHybrid(final T3 delegate) throws Exception {
+            final T3 wrapper = (T3) new ConnectionPoolXADataSourceHybrid(wrapDataSource(delegate), wrapConnectionPoolDataSource(delegate), wrapXADataSource(delegate));
             ensureOnlyWrappingOnce(delegate, wrapper);
             return wrapper;
         }
@@ -218,17 +217,38 @@ public final class DataSourceWrapperFactory implements Serializable {
          *
          * @param delegate die zugrundeliegende Instanz die gleichzeitig die Interfaces
          *                 {@link XADataSource} und {@link DataSource} implementiert.
-         * @param <T>      zusammengesetzter generischer Typ der gleichzeitig beschr&auml;nkt ist auf
-         *                 die Interfaces {@link XADataSource} und {@link DataSource}.
          * @return eine DataSource-Instanz die gleichzeitig die Interfaces
          * {@link XADataSource} und {@link DataSource} implementiert.
          * @throws Exception wird ausgel&ouml;st wenn keine Wrapper-Objekte erzeugt werden k&ouml;nnen.
          */
         @SuppressWarnings("unchecked")
-        public <T extends XADataSource & DataSource> T wrapXADataSourceHybrid(final T delegate) throws Exception {
-            final T wrapper = (T) new XADataSourceHybrid(wrapDataSource(delegate), wrapXADataSource(delegate));
+        public T2 wrapXADataSourceHybrid(final T2 delegate) throws Exception {
+            final T2 wrapper = (T2) new XADataSourceHybrid(wrapDataSource(delegate), wrapXADataSource(delegate));
             ensureOnlyWrappingOnce(delegate, wrapper);
             return wrapper;
+        }
+
+        /**
+         * Diese Wrapper-Klasse implementiert den Sonderfall das ein und dieselbe DataSource-Instanz
+         * gleichzeitig die Interfaces {@link XADataSource} und {@link DataSource} implementiert.
+         *
+         * @param delegate die zugrundeliegende Instanz die gleichzeitig die Interfaces
+         *                 {@link XADataSource} und {@link DataSource} implementiert.
+         * @return eine DataSource-Instanz die gleichzeitig die Interfaces
+         * {@link XADataSource} und {@link DataSource} implementiert.
+         * @throws Exception wird ausgel&ouml;st wenn keine Wrapper-Objekte erzeugt werden k&ouml;nnen.
+         */
+        @SuppressWarnings("unchecked")
+        public T1 wrapAutosence(final T1 delegate) throws Exception {
+            if ((delegate instanceof DataSource) && (delegate instanceof XADataSource) && (delegate instanceof ConnectionPoolDataSource)) {
+                return (T1) wrapConnectionPoolXADataSourceHybrid((T3) delegate);
+            } else if ((delegate instanceof DataSource) && (delegate instanceof XADataSource)) {
+                return (T1) wrapXADataSourceHybrid((T2) delegate);
+            } else if ((delegate instanceof DataSource) && (delegate instanceof ConnectionPoolDataSource)) {
+                return (T1) wrapConnectionPoolDataSourceHybrid((T4) delegate);
+            } else {
+                throw new IllegalArgumentException(delegate.getClass() + " is not implementing DataSource together with XADataSource or ConnectionPoolDataSource ");
+            }
         }
 
     }
