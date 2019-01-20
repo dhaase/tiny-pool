@@ -24,8 +24,8 @@ public final class JavassistProxyClassGenerator {
 
     public JavassistProxyClassGenerator(final BiFunction<String, Class<?>, String> classNameFun, final Class<?> primaryIfaceClass, final Class<?> superClass) {
         this.newClassName = GeneratorJavassist.computeClassName(classNameFun, primaryIfaceClass, superClass);
-        this.delegateMethodBody = (d) -> "{ try { return delegate." + d + "($$); } catch (SQLException e) { throw checkException(e); } }";
-        this.wrapMethodBody = (w, d) -> "{ try { return " + w + "(delegate." + d + "($$), $args); } catch (SQLException e) { throw checkException(e); } }";
+        this.delegateMethodBody = (d) -> "{ try { return delegate." + d + "($$); } catch (Throwable ex) { throw checkException(ex); } }";
+        this.wrapMethodBody = (w, d) -> "{ try { return " + w + "(delegate." + d + "($$), $args); } catch (Throwable ex) { throw checkException(ex); } }";
         this.primaryIfaceClass = primaryIfaceClass;
         this.superClass = superClass;
         this.isWrapMethodConcurrent = ConcurrentFactoryJdbcProxy.class.isAssignableFrom(superClass);

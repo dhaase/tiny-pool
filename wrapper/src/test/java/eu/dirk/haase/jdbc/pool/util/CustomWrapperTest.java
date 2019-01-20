@@ -82,7 +82,6 @@ public class CustomWrapperTest {
         }
         long end = System.nanoTime();
         System.out.println("duration: " + TimeUnit.NANOSECONDS.toMillis(end - start) + "ms");
-        System.out.println(k.getClass().getProtectionDomain().getCodeSource().getLocation());
     }
 
     private DataSource createDataSource(Class<?> dataSourceClass, Class<?> connectionClass, DataSource dataSource) throws Exception {

@@ -27,10 +27,52 @@ public abstract class JdbcProxy<T1> implements JdbcWrapper {
         }
     }
 
-    protected SQLException checkException(Exception ex) {
+    /**
+     * Zentraler Einstiegspunkt um ausgel&ouml;ste Exceptions pr&uuml;fen zu k&ouml;nnen.
+     * <p>
+     * Ein Wrapper der ausgel&ouml;ste Exceptions pr&uuml;fen m&ouml;chte wird
+     * in Regel diese Methode &uuml;berschreiben um die eigene Logik zu etablieren.
+     * <p>
+     * Exceptions vom Typ {@link Error} oder {@link RuntimeException} werden unmittelbar
+     * ausgel&ouml;st.
+     * <p>
+     * Auch wenn es im normalen Einsatzszenario dieser Methode nicht vorkommen kann:
+     * Exceptions die nicht vom Typ {@link SQLException}, {@link Error} oder
+     * {@link RuntimeException} sind, werden in eine neue {@link SQLException} gepackt
+     * und zur&uuml;ck geliefert.
+     * <p>
+     * Eine typischer Einsatz dieser Methode:
+     * <pre><code>
+     * &#64;Override
+     * public final Connection getConnection() throws SQLException {
+     *    try {
+     *       return delegate.getConnection();
+     *    } catch (Throwable ex) {
+     *       throw checkException(ex);
+     *    }
+     * }
+     * </code></pre>
+     *
+     * @param ex die zu pr&uuml;fende Exception.
+     * @return liefert eine {@link SQLException} zur&uuml;ck, sofern es keine Exception
+     * vom Typ {@link Error} oder {@link RuntimeException} ist. Exceptions vom Typ
+     * {@link Error} oder {@link RuntimeException} werden unmittelbar ausgel&ouml;st.
+     * @throws Error            sofern die angegebene Exception vom Typ {@link Error}
+     *                          ist.
+     * @throws RuntimeException sofern die angegebene Exception vom Typ
+     *                          {@link RuntimeException} ist.
+     */
+    protected SQLException checkException(final Throwable ex) {
         if (ex instanceof SQLException) {
             return (SQLException) ex;
+        } else if (ex instanceof Error) {
+            throw (Error) ex;
+        } else if (ex instanceof RuntimeException) {
+            throw (RuntimeException) ex;
         } else {
+            // Eigentlich koennen andere gepruefte
+            // Exceptions als SQLException hier nicht
+            // mehr auftauchen. Aber falls doch:
             return new SQLException(ex.toString(), ex);
         }
     }
