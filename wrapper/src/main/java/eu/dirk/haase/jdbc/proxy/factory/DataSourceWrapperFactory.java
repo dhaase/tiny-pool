@@ -178,13 +178,14 @@ public final class DataSourceWrapperFactory {
      * oder {@link ConnectionPoolDataSource} implementiert.
      *
      * @param <T1> generischer Typ der auf {@link DataSource} beschr&auml;nkt ist.
-     * @param <T2> zusammengesetzter generischer Typ der gleichzeitig beschr&auml;nkt
-     *             ist auf die Interfaces {@link XADataSource} und {@link DataSource}.
-     * @param <T3> zusammengesetzter generischer Typ der gleichzeitig beschr&auml;nkt
-     *             ist auf die Interfaces {@link ConnectionPoolDataSource},
-     *             {@link XADataSource} und {@link DataSource}.
-     * @param <T4> zusammengesetzter generischer Typ der gleichzeitig beschr&auml;nkt
-     *             ist auf {@link ConnectionPoolDataSource} und {@link DataSource}.
+     * @param <T2> zusammengesetzter generischer Typ der gleichzeitig auf die Interfaces
+     *             {@link DataSource} und {@link XADataSource} beschr&auml;nkt ist.
+     * @param <T3> zusammengesetzter generischer Typ der gleichzeitig auf die Interfaces
+     *             {@link DataSource}, {@link XADataSource} und
+     *             {@link ConnectionPoolDataSource} beschr&auml;nkt ist.
+     * @param <T4> zusammengesetzter generischer Typ der gleichzeitig auf die Interfaces
+     *             {@link DataSource} und {@link ConnectionPoolDataSource}
+     *             beschr&auml;nkt ist.
      * @see ConnectionPoolDataSourceHybrid
      * @see ConnectionPoolXADataSourceHybrid
      * @see XADataSourceHybrid
