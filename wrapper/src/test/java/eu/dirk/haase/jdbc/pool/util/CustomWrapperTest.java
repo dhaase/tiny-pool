@@ -20,7 +20,7 @@ import static org.assertj.core.api.Java6Assertions.assertThat;
 public class CustomWrapperTest {
 
     private Map<Class<?>, Object> interfaceToClassMap;
-    private Generator generator = new Generator();
+    private Generator generator = Generator.getSingleton();
 
     @Before
     public void setUp() {

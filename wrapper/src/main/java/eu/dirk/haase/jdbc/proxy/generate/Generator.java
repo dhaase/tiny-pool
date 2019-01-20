@@ -6,7 +6,6 @@ import javassist.CtClass;
 
 import javax.sql.*;
 import javax.transaction.xa.XAResource;
-import java.io.Serializable;
 import java.net.URL;
 import java.security.CodeSigner;
 import java.security.CodeSource;
@@ -22,8 +21,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
-public final class Generator implements Serializable {
+public final class Generator {
 
+    private static final Generator SINGLETON = new Generator();
     private static final String prefix = "gen.";
     private static final BiFunction<String, Class<?>, String> CLASS_NAME_FUN = (cn, iface) -> cn.replaceAll("(.+)\\.(\\w+)", "$1." + prefix + "$2");
     private static final long serialVersionUID = 0L;
@@ -51,15 +51,19 @@ public final class Generator implements Serializable {
         generator.generate(iface2ClassMap);
     }
 
-    private final ConcurrentHashMap<String, Lock> parallelLockMap;
+    private final ConcurrentHashMap<String, Object> parallelLockMap;
 
-    public Generator() {
+    private Generator() {
         super();
         this.parallelLockMap = new ConcurrentHashMap<>();
     }
 
     static String computeClassName(final BiFunction<String, Class<?>, String> classNameFun, final Class<?> primaryIfaceClass, final Class<?> superClass) {
         return classNameFun.apply(superClass.getName().replace("Abstract", ""), primaryIfaceClass);
+    }
+
+    public static Generator getSingleton() {
+        return SINGLETON;
     }
 
     /**
@@ -217,9 +221,9 @@ public final class Generator implements Serializable {
         return generate(iface2CustomClassMap, CLASS_NAME_FUN);
     }
 
-    private Lock getClassGeneratingLock(final String className) {
-        final Lock newLock = new Lock();
-        Lock lock = parallelLockMap.putIfAbsent(className, newLock);
+    private Object getClassGeneratingLock(final String className) {
+        final Object newLock = new Object();
+        Object lock = parallelLockMap.putIfAbsent(className, newLock);
         if (lock == null) {
             lock = newLock;
         }
@@ -253,11 +257,4 @@ public final class Generator implements Serializable {
         }
     }
 
-    static class Lock implements Serializable {
-        private static final long serialVersionUID = 0L;
-
-        public Lock() {
-            super();
-        }
-    }
 }
