@@ -81,7 +81,7 @@ final class GeneratorJavassist implements Generator {
      *                         erhalten soll.
      * @return die geladene normale Klasse.
      */
-    private static Object toClass(final CtClass ctClass, final ClassLoader classLoader, final ProtectionDomain protectionDomain) {
+    private static Class<?> toClass(final CtClass ctClass, final ClassLoader classLoader, final ProtectionDomain protectionDomain) {
         try {
             return ctClass.toClass(classLoader, protectionDomain);
         } catch (CannotCompileException ex) {
