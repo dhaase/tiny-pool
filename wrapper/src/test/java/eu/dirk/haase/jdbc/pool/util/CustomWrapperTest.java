@@ -1,7 +1,7 @@
 package eu.dirk.haase.jdbc.pool.util;
 
 import eu.dirk.haase.jdbc.mywrap.*;
-import eu.dirk.haase.jdbc.proxy.factory.DataSourceWrapper;
+import eu.dirk.haase.jdbc.proxy.factory.DataSourceWrapperFactory;
 import eu.dirk.haase.jdbc.proxy.generate.Generator;
 import org.junit.Before;
 import org.junit.Test;
@@ -39,7 +39,7 @@ public class CustomWrapperTest {
     @Test
     public void test_wrapper_datasource() throws Exception {
         DummyDataSource dummyDataSource = new DummyDataSource(true);
-        DataSourceWrapper dsw = new DataSourceWrapper(interfaceToClassMap);
+        DataSourceWrapperFactory dsw = new DataSourceWrapperFactory(interfaceToClassMap);
         DataSource dataSource_a = dsw.wrapDataSource(dummyDataSource.newDataSource());
         Connection connection1_a = dataSource_a.getConnection();
         assertThat(connection1_a).isInstanceOf(MyWrapConnection.class);
@@ -88,7 +88,7 @@ public class CustomWrapperTest {
     private DataSource createDataSource(Class<?> dataSourceClass, Class<?> connectionClass, DataSource dataSource) throws Exception {
         final Map<Class<?>, Class<?>> iface2CustomClassMap = newClassClassMap(dataSourceClass, connectionClass);
         final Map<Class<?>, Object> ifaceToClassMap = generator.generate(iface2CustomClassMap);
-        DataSourceWrapper dsw = new DataSourceWrapper(ifaceToClassMap);
+        DataSourceWrapperFactory dsw = new DataSourceWrapperFactory(ifaceToClassMap);
         return dsw.wrapDataSource(dataSource);
     }
 }

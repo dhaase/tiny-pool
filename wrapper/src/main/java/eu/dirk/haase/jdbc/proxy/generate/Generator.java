@@ -10,7 +10,7 @@ import java.util.function.BiFunction;
 public interface Generator {
 
     /**
-     * Liefert die Standard-Instanz des Generators.
+     * Liefert die Standard-Instanz (meist als Singleton) des Generators.
      *
      * @return die Standard-Instanz des Generators.
      */

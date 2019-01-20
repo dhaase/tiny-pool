@@ -1,6 +1,6 @@
 package eu.dirk.haase.jdbc.pool.util;
 
-import eu.dirk.haase.jdbc.proxy.factory.DataSourceWrapper;
+import eu.dirk.haase.jdbc.proxy.factory.DataSourceWrapperFactory;
 import eu.dirk.haase.jdbc.proxy.generate.JavassistProxyFactory;
 import org.h2.jdbcx.JdbcDataSource;
 import org.junit.Before;
@@ -53,7 +53,7 @@ public class WrapperTest {
     @Test
     public void test_wrapper_datasource() throws Exception {
         DummyDataSource dummyDataSource = new DummyDataSource(false);
-        DataSourceWrapper dsw = new DataSourceWrapper(interfaceToClassMap);
+        DataSourceWrapperFactory dsw = new DataSourceWrapperFactory(interfaceToClassMap);
         DataSource dataSource = dsw.wrapDataSource(dummyDataSource.newDataSource());
         Connection connection1 = dataSource.getConnection();
         Connection connection2 = dataSource.getConnection();
@@ -63,7 +63,7 @@ public class WrapperTest {
     @Test
     public void test_wrapper_datasource_singleton() throws Exception {
         DummyDataSource dummyDataSource = new DummyDataSource(true);
-        DataSourceWrapper dsw = new DataSourceWrapper(interfaceToClassMap);
+        DataSourceWrapperFactory dsw = new DataSourceWrapperFactory(interfaceToClassMap);
         DataSource dataSource_a = dsw.wrapDataSource(dummyDataSource.newDataSource());
         Connection connection1_a = dataSource_a.getConnection();
         Connection connection2_a = dataSource_a.getConnection();
@@ -75,7 +75,7 @@ public class WrapperTest {
     public void test_wrapper_datasource_h2() throws Exception {
         JdbcDataSource h2Ds = new JdbcDataSource();
         h2Ds.setUrl("jdbc:h2:mem:test");
-        DataSourceWrapper dsw = new DataSourceWrapper(interfaceToClassMap);
+        DataSourceWrapperFactory dsw = new DataSourceWrapperFactory(interfaceToClassMap);
         XADataSource dataSource_a = dsw.wrapXADataSource(h2Ds);
         XAConnection connection1_a = dataSource_a.getXAConnection();
         connection1_a.getXAResource();
@@ -85,7 +85,7 @@ public class WrapperTest {
     public void test_wrapper_h2() throws Exception {
         JdbcDataSource h2Ds = new JdbcDataSource();
         h2Ds.setUrl("jdbc:h2:mem:test");
-        DataSourceWrapper dsw = new DataSourceWrapper(interfaceToClassMap);
+        DataSourceWrapperFactory dsw = new DataSourceWrapperFactory(interfaceToClassMap);
         XADataSource dataSource_a = dsw.wrapXADataSource(h2Ds);
         XAConnection connection1_a = dataSource_a.getXAConnection();
         connection1_a.getXAResource();

@@ -1,7 +1,8 @@
 package eu.dirk.haase.jdbc.proxy.factory;
 
 import eu.dirk.haase.jdbc.proxy.base.JdbcWrapper;
-import eu.dirk.haase.jdbc.proxy.generate.DefaultClassLoaderSupplier;
+import eu.dirk.haase.jdbc.proxy.generate.Generator;
+import eu.dirk.haase.jdbc.proxy.generate.MultipleParentClassLoader;
 import eu.dirk.haase.jdbc.proxy.hybrid.ConnectionPoolDataSourceHybrid;
 import eu.dirk.haase.jdbc.proxy.hybrid.ConnectionPoolXADataSourceHybrid;
 import eu.dirk.haase.jdbc.proxy.hybrid.XADataSourceHybrid;
@@ -16,17 +17,15 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-public final class DataSourceWrapper implements Serializable {
+public final class DataSourceWrapperFactory implements Serializable {
 
-    private final DefaultClassLoaderSupplier defaultClassLoader;
     private final Map<Class<?>, Object> interfaceToClassMap;
     private transient volatile Constructor<ConnectionPoolDataSource> connectionPoolDataSourceConstructor;
     private transient volatile Constructor<DataSource> dataSourceConstructor;
     private transient volatile Constructor<XADataSource> xaDataSourceConstructor;
 
-    public DataSourceWrapper(final Map<Class<?>, Object> interfaceToClassMap) throws Exception {
-        this.defaultClassLoader = new DefaultClassLoaderSupplier();
-        this.interfaceToClassMap = Collections.unmodifiableMap(new HashMap<>(interfaceToClassMap));
+    public DataSourceWrapperFactory(final Map<Class<?>, Object> ifaceToWrapperClassMap) throws Exception {
+        this.interfaceToClassMap = Collections.unmodifiableMap(new HashMap<>(ifaceToWrapperClassMap));
         this.dataSourceConstructor = getDataSourceConstructor(null);
         this.xaDataSourceConstructor = getXADataSourceConstructor(null);
         this.connectionPoolDataSourceConstructor = getConnectionPoolDataSourceConstructor(null);
@@ -40,12 +39,20 @@ public final class DataSourceWrapper implements Serializable {
         }
     }
 
-    public ClassLoader getClassLoader() {
-        return this.defaultClassLoader.getClassLoader();
-    }
-
-    public void setClassLoader(ClassLoader classLoader) {
-        this.defaultClassLoader.setClassLoader(classLoader);
+    /**
+     * Liefert eine DataSource-Factory um DataSources in einen Wrapper einzupacken.
+     *
+     * @param iface2CustomClassMap eine Map mit abstrakten Klassen von denen die JDBC-Wrapper
+     *                             Klassen abgeleitet werden sollen.
+     * @return eine DataSource-Factory um DataSources in einen Wrapper einzupacken.
+     * @throws Exception wird ausgel&ouml;st wenn die DataSource-Factory nicht erzeugt werden kann.
+     * @see #wrapConnectionPoolDataSource(javax.sql.ConnectionPoolDataSource)
+     * @see #wrapDataSource(javax.sql.DataSource)
+     * @see #wrapXADataSource(javax.sql.XADataSource)
+     */
+    public static DataSourceWrapperFactory newInstance(final Map<Class<?>, Class<?>> iface2CustomClassMap) throws Exception {
+        final Map<Class<?>, Object> ifaceToWrapperClassMap = Generator.instance().generate(iface2CustomClassMap);
+        return new DataSourceWrapperFactory(ifaceToWrapperClassMap);
     }
 
     private Constructor<ConnectionPoolDataSource> getConnectionPoolDataSourceConstructor(Class<?> delegateClass) throws ClassNotFoundException {
@@ -53,10 +60,14 @@ public final class DataSourceWrapper implements Serializable {
         if (interfaceToClassMap.containsKey(ifaceClass)) {
             final Class<?> connectionPoolDataSourceProxyClass = loadClass(interfaceToClassMap, ifaceClass);
             if (connectionPoolDataSourceProxyClass != delegateClass) {
-                if (connectionPoolDataSourceConstructor == null) {
-                    connectionPoolDataSourceConstructor = getDeclaredConstructor(connectionPoolDataSourceProxyClass, ifaceClass);
+                if ((delegateClass == null) || ifaceClass.isAssignableFrom(delegateClass)) {
+                    if (connectionPoolDataSourceConstructor == null) {
+                        connectionPoolDataSourceConstructor = getDeclaredConstructor(connectionPoolDataSourceProxyClass, ifaceClass);
+                    }
+                    return connectionPoolDataSourceConstructor;
+                } else {
+                    throw new IllegalArgumentException(delegateClass + " is not implementing " + ifaceClass);
                 }
-                return connectionPoolDataSourceConstructor;
             } else {
                 throw new IllegalArgumentException("Can not wrap twice: " + connectionPoolDataSourceProxyClass);
             }
@@ -69,10 +80,14 @@ public final class DataSourceWrapper implements Serializable {
         if (interfaceToClassMap.containsKey(ifaceClass)) {
             final Class<?> dataSourceProxyClass = loadClass(interfaceToClassMap, ifaceClass);
             if (dataSourceProxyClass != delegateClass) {
-                if (this.dataSourceConstructor == null) {
-                    this.dataSourceConstructor = getDeclaredConstructor(dataSourceProxyClass, ifaceClass);
+                if ((delegateClass == null) || ifaceClass.isAssignableFrom(delegateClass)) {
+                    if (this.dataSourceConstructor == null) {
+                        this.dataSourceConstructor = getDeclaredConstructor(dataSourceProxyClass, ifaceClass);
+                    }
+                    return this.dataSourceConstructor;
+                } else {
+                    throw new IllegalArgumentException(delegateClass + " is not implementing " + ifaceClass);
                 }
-                return this.dataSourceConstructor;
             } else {
                 throw new IllegalArgumentException("Can not wrap twice: " + dataSourceProxyClass);
             }
@@ -98,10 +113,14 @@ public final class DataSourceWrapper implements Serializable {
         if (interfaceToClassMap.containsKey(ifaceClass)) {
             final Class<?> xaDataSourceProxyClass = loadClass(interfaceToClassMap, ifaceClass);
             if (xaDataSourceProxyClass != delegateClass) {
-                if (this.xaDataSourceConstructor == null) {
-                    this.xaDataSourceConstructor = getDeclaredConstructor(xaDataSourceProxyClass, ifaceClass);
+                if ((delegateClass == null) || ifaceClass.isAssignableFrom(delegateClass)) {
+                    if (this.xaDataSourceConstructor == null) {
+                        this.xaDataSourceConstructor = getDeclaredConstructor(xaDataSourceProxyClass, ifaceClass);
+                    }
+                    return this.xaDataSourceConstructor;
+                } else {
+                    throw new IllegalArgumentException(delegateClass + " is not implementing " + ifaceClass);
                 }
-                return this.xaDataSourceConstructor;
             } else {
                 throw new IllegalArgumentException("Can not wrap twice: " + xaDataSourceProxyClass);
             }
@@ -112,7 +131,7 @@ public final class DataSourceWrapper implements Serializable {
     private Class<?> loadClass(Map<Class<?>, Object> ifaceToClassMap, final Class<?> iface) throws ClassNotFoundException {
         Object proxyClass = ifaceToClassMap.get(iface);
         if (proxyClass instanceof String) {
-            return Class.forName((String) proxyClass, true, getClassLoader());
+            return Class.forName((String) proxyClass, true, new MultipleParentClassLoader());
         }
         return (Class<?>) proxyClass;
     }

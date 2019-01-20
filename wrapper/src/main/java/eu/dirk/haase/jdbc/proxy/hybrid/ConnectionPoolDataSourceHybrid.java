@@ -1,17 +1,13 @@
 package eu.dirk.haase.jdbc.proxy.hybrid;
 
 import eu.dirk.haase.jdbc.proxy.common.Unwrapper;
-import eu.dirk.haase.jdbc.proxy.factory.DataSourceWrapper;
+import eu.dirk.haase.jdbc.proxy.factory.DataSourceWrapperFactory;
 
 import javax.sql.ConnectionPoolDataSource;
 import javax.sql.DataSource;
 import javax.sql.PooledConnection;
-import java.io.PrintWriter;
-import java.sql.Connection;
 import java.sql.SQLException;
-import java.sql.SQLFeatureNotSupportedException;
 import java.sql.Wrapper;
-import java.util.logging.Logger;
 
 /**
  * Diese Wrapper-Klasse implementiert den Sonderfall das ein und dieselbe DataSource-Instanz
@@ -19,7 +15,7 @@ import java.util.logging.Logger;
  * implementieren.
  * <p>
  * Instanzen dieser Klasse werden gew&ouml;hnlich erzeugt durch die Factory
- * {@link DataSourceWrapper.Hybrid}.
+ * {@link DataSourceWrapperFactory.Hybrid}.
  * <p>
  * Hinweis: Da diese Wrapper-Klasse keine zus&auml;tzliche Funktionalit&auml;t bietet
  * kann sie nur dann sinnvoll eingesetzt werden, wenn
@@ -31,7 +27,7 @@ import java.util.logging.Logger;
  * <li>und die Instanz-Variablen durch Wrapper die gew&uuml;nschten zus&auml;tzliche Funktionalit&auml;ten erhalten.</li>
  * </ul>
  *
- * @see DataSourceWrapper.Hybrid#wrapConnectionPoolDataSourceHybrid(javax.sql.ConnectionPoolDataSource)
+ * @see DataSourceWrapperFactory.Hybrid#wrapConnectionPoolDataSourceHybrid(javax.sql.ConnectionPoolDataSource)
  * @see ConnectionPoolDataSource
  * @see DataSource
  */
@@ -45,7 +41,7 @@ public final class ConnectionPoolDataSourceHybrid extends AbstractDataSourceHybr
      * und {@link ConnectionPoolDataSource} implementiert.
      * <p>
      * Hinweis: Die ursp&uuml;ngliche Instanzen der beiden Parameter m&uuml;ssen identisch
-     * sein. Sichergestellt wird dies durch die Factory {@link DataSourceWrapper.Hybrid}.
+     * sein. Sichergestellt wird dies durch die Factory {@link DataSourceWrapperFactory.Hybrid}.
      *
      * @param dataSourceProxy               eine Proxy-Instanz deren ursp&uuml;ngliche Instanz identisch
      *                                      ist mit der ursp&uuml;ngliche Instanz des zweiten Parameters.
