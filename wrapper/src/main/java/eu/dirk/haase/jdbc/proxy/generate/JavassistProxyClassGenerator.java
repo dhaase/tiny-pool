@@ -9,7 +9,7 @@ import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
-public class JavassistProxyClassGenerator {
+public final class JavassistProxyClassGenerator {
 
     private final Set<String> allFieldSet;
     private final Set<String> allInitFieldSet;
@@ -23,7 +23,7 @@ public class JavassistProxyClassGenerator {
     private ClassPool classPool;
 
     public JavassistProxyClassGenerator(final BiFunction<String, Class<?>, String> classNameFun, final Class<?> primaryIfaceClass, final Class<?> superClass) {
-        this.newClassName = Generator.computeClassName(classNameFun, primaryIfaceClass, superClass);
+        this.newClassName = GeneratorJavassist.computeClassName(classNameFun, primaryIfaceClass, superClass);
         this.delegateMethodBody = (d) -> "{ try { return delegate." + d + "($$); } catch (SQLException e) { throw checkException(e); } }";
         this.wrapMethodBody = (w, d) -> "{ try { return " + w + "(delegate." + d + "($$), $args); } catch (SQLException e) { throw checkException(e); } }";
         this.primaryIfaceClass = primaryIfaceClass;

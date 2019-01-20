@@ -13,7 +13,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-public class JavassistProxyClasses {
+public final class JavassistProxyClasses {
 
     private final Map<Class<?>, Class<?>> iface2ClassMap;
     private CtClass callableStatementCt;
