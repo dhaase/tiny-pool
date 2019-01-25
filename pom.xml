@@ -34,6 +34,7 @@
         <module>wrapper</module>
         <module>xa-transaction</module>
         <module>health-check</module>
+        <module>annotation</module>
     </modules>
 
 </project>

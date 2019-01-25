@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+    http://www.springframework.org/schema/beans/spring-beans-4.1.xsd
+    http://www.springframework.org/schema/context
+    http://www.springframework.org/schema/context/spring-context.xsd">
+
+    <bean id="myObject.bdb" class="eu.dirk.haase.annotation.MyObject">
+        <qualifier type="eu.dirk.haase.annotation.InitalDataSource" value="bdb" />
+        <qualifier type="eu.dirk.haase.annotation.ManagedDataSource" />
+        <constructor-arg><value>bdb</value></constructor-arg>
+    </bean>
+
+    <bean id="myObject.tbs" class="eu.dirk.haase.annotation.MyObject">
+        <qualifier type="eu.dirk.haase.annotation.InitalDataSource" value="tbs" />
+        <qualifier type="eu.dirk.haase.annotation.ManagedDataSource" />
+        <constructor-arg><value>bdb</value></constructor-arg>
+    </bean>
+
+</beans>
